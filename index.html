@@ -3,60 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz Pro | Gohar Edition</title>
+    <title>Massfrendz FB | M.A. Gohar</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
     <style>
-        :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --neon: #1877f2; }
-        [data-theme="dark"] { --bg: #0a0b10; --card: #161b22; --text: #e6edf3; --neon: #00f3ff; }
+        :root { --fb-blue: #1877f2; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --gray: #65676b; }
+        [data-theme="dark"] { --bg: #18191a; --card: #242526; --text: #e4e6eb; --gray: #b0b3b8; }
         
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 70px 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Helvetica, Arial, sans-serif; margin: 0; padding-top: 60px; }
 
-        header { position: fixed; top: 0; width: 100%; height: 65px; background: var(--card); border-bottom: 3px solid var(--neon); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 2000; box-sizing: border-box; }
-        footer { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 3px solid var(--neon); padding: 12px 0; text-align: center; font-size: 20px; font-weight: 800; color: var(--neon); z-index: 2000; }
+        /* FB Style Header */
+        header { position: fixed; top: 0; width: 100%; height: 56px; background: var(--card); border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; padding: 0 16px; z-index: 2000; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .logo { font-size: 28px; font-weight: 800; color: var(--fb-blue); text-shadow: 0 0 10px rgba(24,119,242,0.3); letter-spacing: -1px; }
 
-        .app-container { max-width: 600px; margin: auto; padding: 10px; display: none; } /* Initially hidden */
-        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); }
+        /* Bottom Nav (FB Style) */
+        nav.bottom-nav { position: fixed; bottom: 0; width: 100%; height: 50px; background: var(--card); border-top: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 2000; }
+        .nav-item { font-size: 22px; cursor: pointer; color: var(--gray); position: relative; }
+        .nav-item.active { color: var(--fb-blue); border-bottom: 3px solid var(--fb-blue); padding-bottom: 2px; }
 
-        .user-dp { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--neon); }
-        .logout-btn { background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .container { max-width: 600px; margin: auto; padding: 12px; }
         
-        #login-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .btn-login { background: var(--neon); color: white; border: none; padding: 15px 30px; border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        /* Stories */
+        .story-tray { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
+        .story-card { min-width: 100px; height: 160px; background: #ddd; border-radius: 12px; position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; }
+        .story-dp { position: absolute; top: 8px; left: 8px; width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--fb-blue); }
+
+        /* Cards & Posts */
+        .card { background: var(--card); border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .user-dp { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        
+        /* Reaction Bar */
+        .action-bar { display: flex; justify-content: space-around; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; margin-top: 10px; }
+        .action-btn { background: none; border: none; color: var(--gray); font-weight: 600; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+        /* Overlays */
+        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--card); z-index: 3000; display: none; overflow-y: auto; }
+        .overlay-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="login-screen">
-    <h1 style="color:var(--neon); font-size: 40px;">MASSFRENDZ</h1>
-    <p>Please Login to Continue</p>
-    <button class="btn-login" onclick="login()">Login with Google</button>
-</div>
-
 <header>
-    <div style="font-size: 24px; font-weight: 900; color: var(--neon);">MASSFRENDZ</div>
-    <div style="display:flex; align-items:center; gap:10px;">
-        <img id="header-dp" class="user-dp" src="">
-        <button class="logout-btn" onclick="logout()">LOGOUT</button>
+    <div class="logo">massfrendz</div>
+    <div style="display:flex; gap:12px; align-items:center;">
+        <label><img id="my-dp-top" class="user-dp" style="width:32px; height:32px;"><input type="file" id="dpFile" hidden onchange="updateDP(this)"></label>
     </div>
 </header>
 
-<div class="app-container" id="main-app">
-    <div class="card">
-        <textarea id="postTxt" placeholder="What's on your mind, Gohar?" style="width:100%; border:none; outline:none; font-size:16px; min-height:60px;"></textarea>
-        <div id="preview-area"></div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-            <label style="cursor:pointer; font-size:22px;">🖼️<input type="file" id="postImg" hidden onchange="previewPost(this)"></label>
-            <button onclick="submitPost()" style="background:var(--neon); color:white; border:none; padding:8px 20px; border-radius:20px; font-weight:bold;">POST</button>
+<div class="container">
+    <div class="story-tray" id="stories">
+        <div class="story-card" style="background: var(--card);" onclick="document.getElementById('stInp').click()">
+            <div style="height:70%; background:#eee; display:flex; align-items:center; justify-content:center; font-size:30px;">+</div>
+            <div style="padding:5px; font-size:12px; font-weight:bold; text-align:center;">Create Story</div>
+            <input type="file" id="stInp" hidden onchange="addStory(this)">
         </div>
     </div>
-    <div id="feed-cont"></div>
+
+    <div class="card">
+        <div style="display:flex; gap:10px;">
+            <img class="user-dp my-pic" src="">
+            <button onclick="document.getElementById('postTxt').focus()" style="flex:1; background:var(--bg); border:none; border-radius:20px; text-align:left; padding:0 15px; color:var(--gray);">What's on your mind?</button>
+        </div>
+        <textarea id="postTxt" style="width:100%; height:0; opacity:0;"></textarea>
+        <div id="pre-img"></div>
+        <div class="action-bar">
+            <label class="action-btn">📷 Photo<input type="file" id="postImg" hidden onchange="preview(this)"></label>
+            <button class="action-btn" onclick="submitPost()">🚀 Post</button>
+        </div>
+    </div>
+
+    <div id="feed"></div>
 </div>
 
-<footer>Powered by M.A.GOHAR</footer>
+<nav class="bottom-nav">
+    <div class="nav-item active" onclick="showTab('home')">🏠</div>
+    <div class="nav-item" onclick="showTab('friends')">👥<span id="req-badge" style="position:absolute; top:-5px; right:-10px; background:red; color:white; border-radius:50%; font-size:10px; padding:2px 5px; display:none;">0</span></div>
+    <div class="nav-item" onclick="showTab('chat')">💬</div>
+    <div class="nav-item" onclick="logout()">⚙️</div>
+</nav>
+
+<div id="friends-overlay" class="overlay">
+    <div class="overlay-header"><span onclick="closeOverlay('friends-overlay')">⬅️</span> Friend Requests</div>
+    <div id="req-list" class="container"></div>
+</div>
+
+<div id="profile-overlay" class="overlay">
+    <div class="overlay-header"><span onclick="closeOverlay('profile-overlay')">⬅️</span> Profile</div>
+    <div class="container" style="text-align:center;">
+        <img id="v-dp" style="width:120px; height:120px; border-radius:50%; border:4px solid var(--fb-blue);">
+        <h2 id="v-name"></h2>
+        <div id="v-actions"></div>
+    </div>
+</div>
 
 <script>
     const firebaseConfig = {
@@ -65,87 +106,112 @@
         databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/",
         projectId: "massfrendz"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
-
-    // Force persistence to LOCAL
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    let me = null;
 
     auth.onAuthStateChanged(user => {
         if (user) {
-            window.me = user;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            document.getElementById('header-dp').src = user.photoURL;
-            loadFeed();
-        } else {
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('main-app').style.display = 'none';
-        }
+            me = user;
+            db.ref('users/' + user.uid).on('value', s => {
+                const d = s.val() || { name: user.displayName, pic: user.photoURL, uid: user.uid };
+                document.getElementById('my-dp-top').src = d.pic;
+                const pics = document.querySelectorAll('.my-pic');
+                pics.forEach(p => p.src = d.pic);
+                if(!s.val()) db.ref('users/' + user.uid).set(d);
+            });
+            initApp();
+        } else { auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
     });
 
-    function login() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(err => {
-            // Agar popup block ho jaye toh redirect karein
-            auth.signInWithRedirect(provider);
+    // 1. REACTIONS (GOLD/SILVER)
+    window.react = (pid, type) => {
+        const rRef = db.ref(`likes/${pid}/${me.uid}`);
+        rRef.once('value', s => {
+            if(s.val() === type) {
+                db.ref(`posts/${pid}/${type}`).transaction(c => (c||0)-1);
+                rRef.remove();
+            } else {
+                db.ref(`posts/${pid}/${type}`).transaction(c => (c||0)+1);
+                rRef.set(type);
+            }
         });
-    }
-
-    function logout() {
-        if(confirm("Log Out karna chahte hain?")) {
-            auth.signOut().then(() => {
-                window.location.reload();
-            });
-        }
-    }
-
-    window.previewPost = (input) => {
-        if(input.files[0]) {
-            const r = new FileReader();
-            r.onload = e => document.getElementById('preview-area').innerHTML = `<img src="${e.target.result}" style="width:100%; border-radius:10px; margin-top:10px;">`;
-            r.readAsDataURL(input.files[0]);
-        }
     };
 
-    window.submitPost = () => {
-        const txt = document.getElementById('postTxt').value;
-        const file = document.getElementById('postImg').files[0];
-        
-        const save = (img = "") => {
-            db.ref('posts').push({
-                uid: me.uid, name: me.displayName, pic: me.photoURL,
-                text: txt, image: img, time: Date.now()
-            });
-            document.getElementById('postTxt').value = "";
-            document.getElementById('preview-area').innerHTML = "";
-        };
-
-        if(file) {
-            const r = new FileReader(); r.onload = () => save(r.result); r.readAsDataURL(file);
-        } else if(txt) save("");
+    // 2. PROFILE & REQUEST SYSTEM
+    window.openProfile = (uid) => {
+        db.ref('users/' + uid).once('value', s => {
+            const u = s.val();
+            document.getElementById('v-dp').src = u.pic;
+            document.getElementById('v-name').innerText = u.name;
+            document.getElementById('v-actions').innerHTML = `
+                <button onclick="sendReq('${uid}')" class="action-btn" style="background:var(--fb-blue); color:white; padding:10px 20px; border-radius:5px; margin:5px;">Add Friend</button>
+                <button onclick="alert('Chat coming soon!')" class="action-btn" style="background:#eee; padding:10px 20px; border-radius:5px; margin:5px;">Message</button>
+            `;
+            document.getElementById('profile-overlay').style.display = 'block';
+        });
     };
 
-    function loadFeed() {
-        db.ref('posts').limitToLast(20).on('value', snap => {
-            const cont = document.getElementById('feed-cont');
+    window.sendReq = (uid) => {
+        db.ref(`requests/${uid}/${me.uid}`).set({ name: me.displayName, pic: me.photoURL });
+        alert("Friend Request Sent!");
+    };
+
+    // 3. TAB SYSTEM
+    window.showTab = (tab) => {
+        if(tab === 'friends') document.getElementById('friends-overlay').style.display = 'block';
+        // Add chat logic here
+    };
+
+    window.closeOverlay = (id) => document.getElementById(id).style.display = 'none';
+
+    function initApp() {
+        // Feed Listener
+        db.ref('posts').on('value', snap => {
+            const cont = document.getElementById('feed');
             cont.innerHTML = "";
             snap.forEach(c => {
-                const p = c.val();
+                const p = c.val(); const pid = c.key;
                 cont.innerHTML = `
                 <div class="card">
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;" onclick="openProfile('${p.uid}')">
                         <img src="${p.pic}" class="user-dp">
-                        <b>${p.name}</b>
+                        <div><b>${p.name}</b><br><small style="color:var(--gray);">Just now</small></div>
                     </div>
                     <p>${p.text}</p>
-                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:10px; margin-top:10px;">` : ''}
+                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:8px; margin:10px 0;">` : ''}
+                    <div class="action-bar">
+                        <button class="action-btn" onclick="react('${pid}','gold')">🟡 ${p.gold||0} Gold</button>
+                        <button class="action-btn" onclick="react('${pid}','silver')">⚪ ${p.silver||0} Silver</button>
+                    </div>
                 </div>` + cont.innerHTML;
             });
         });
+
+        // Request Badge
+        db.ref(`requests/${me.uid}`).on('value', s => {
+            const badge = document.getElementById('req-badge');
+            const count = s.numChildren();
+            if(count > 0) { badge.style.display = 'block'; badge.innerText = count; }
+            else badge.style.display = 'none';
+        });
     }
+
+    // UTILS
+    window.logout = () => auth.signOut();
+    window.preview = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>document.getElementById('pre-img').innerHTML=`<img src="${e.target.result}" style="width:100%; margin-top:10px; border-radius:8px;">`; r.readAsDataURL(i.files[0]); } };
+    window.updateDP = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>db.ref('users/'+me.uid).update({pic:e.target.result}); r.readAsDataURL(i.files[0]); } };
+    window.submitPost = () => {
+        const txt = prompt("What's on your mind?");
+        if(!txt) return;
+        const file = document.getElementById('postImg').files[0];
+        const push = (img="") => {
+            db.ref('posts').push({ uid: me.uid, name: me.displayName, pic: document.getElementById('my-dp-top').src, text: txt, image: img, gold:0, silver:0, time: Date.now() });
+            document.getElementById('pre-img').innerHTML="";
+        };
+        if(file) { const r = new FileReader(); r.onload=()=>push(r.result); r.readAsDataURL(file); } else push();
+    };
 </script>
 </body>
 </html>
