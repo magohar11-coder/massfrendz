@@ -3,99 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz FB | M.A. Gohar</title>
+    <title>Massfrendz Pro | Gohar</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
     <style>
-        :root { --fb-blue: #1877f2; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --gray: #65676b; }
-        [data-theme="dark"] { --bg: #18191a; --card: #242526; --text: #e4e6eb; --gray: #b0b3b8; }
+        :root { --fb-blue: #1877f2; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; }
+        [data-theme="dark"] { --bg: #18191a; --card: #242526; --text: #e4e6eb; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-bottom: 60px; }
+
+        header { position: sticky; top: 0; background: var(--card); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000; }
+        .logo { font-size: 24px; font-weight: 800; color: var(--fb-blue); }
+
+        .container { max-width: 600px; margin: auto; padding: 10px; }
+        .card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Helvetica, Arial, sans-serif; margin: 0; padding-top: 60px; }
+        /* Story UI */
+        .story-box { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; }
+        .story { min-width: 90px; height: 150px; background: #333; border-radius: 10px; position: relative; overflow: hidden; border: 1px solid #ddd; }
+        .story img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* FB Style Header */
-        header { position: fixed; top: 0; width: 100%; height: 56px; background: var(--card); border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; padding: 0 16px; z-index: 2000; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .logo { font-size: 28px; font-weight: 800; color: var(--fb-blue); text-shadow: 0 0 10px rgba(24,119,242,0.3); letter-spacing: -1px; }
-
-        /* Bottom Nav (FB Style) */
-        nav.bottom-nav { position: fixed; bottom: 0; width: 100%; height: 50px; background: var(--card); border-top: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: space-around; align-items: center; z-index: 2000; }
-        .nav-item { font-size: 22px; cursor: pointer; color: var(--gray); position: relative; }
-        .nav-item.active { color: var(--fb-blue); border-bottom: 3px solid var(--fb-blue); padding-bottom: 2px; }
-
-        .container { max-width: 600px; margin: auto; padding: 12px; }
+        /* Chat Window */
+        #chat-window { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 5000; display: none; flex-direction: column; }
+        #chat-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 10px; border-radius: 15px; max-width: 75%; position: relative; }
+        .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; }
+        .msg-them { background: #ddd; color: black; align-self: flex-start; }
         
-        /* Stories */
-        .story-tray { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
-        .story-card { min-width: 100px; height: 160px; background: #ddd; border-radius: 12px; position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; }
-        .story-dp { position: absolute; top: 8px; left: 8px; width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--fb-blue); }
-
-        /* Cards & Posts */
-        .card { background: var(--card); border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .user-dp { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .user-row { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; }
+        .dp { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--fb-blue); }
         
-        /* Reaction Bar */
-        .action-bar { display: flex; justify-content: space-around; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; margin-top: 10px; }
-        .action-btn { background: none; border: none; color: var(--gray); font-weight: 600; display: flex; align-items: center; gap: 5px; cursor: pointer; }
-
-        /* Overlays */
-        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--card); z-index: 3000; display: none; overflow-y: auto; }
-        .overlay-header { padding: 15px; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 15px; font-weight: bold; }
+        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 4000; display: none; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="logo">massfrendz</div>
-    <div style="display:flex; gap:12px; align-items:center;">
-        <label><img id="my-dp-top" class="user-dp" style="width:32px; height:32px;"><input type="file" id="dpFile" hidden onchange="updateDP(this)"></label>
+    <div style="display:flex; gap:10px;">
+        <button onclick="showOverlay('profile-settings')" style="border:none; background:none; font-size:20px;">⚙️</button>
+        <img id="my-top-dp" class="dp" style="width:32px; height:32px;" onclick="showOverlay('req-overlay')">
     </div>
 </header>
 
 <div class="container">
-    <div class="story-tray" id="stories">
-        <div class="story-card" style="background: var(--card);" onclick="document.getElementById('stInp').click()">
-            <div style="height:70%; background:#eee; display:flex; align-items:center; justify-content:center; font-size:30px;">+</div>
-            <div style="padding:5px; font-size:12px; font-weight:bold; text-align:center;">Create Story</div>
-            <input type="file" id="stInp" hidden onchange="addStory(this)">
-        </div>
+    <div class="story-box">
+        <div class="story" onclick="document.getElementById('stInp').click()" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#666;"><b>+ Story</b></div>
+        <input type="file" id="stInp" hidden onchange="uploadStory(this)">
+        <div id="story-list" style="display:flex; gap:10px;"></div>
     </div>
 
     <div class="card">
-        <div style="display:flex; gap:10px;">
-            <img class="user-dp my-pic" src="">
-            <button onclick="document.getElementById('postTxt').focus()" style="flex:1; background:var(--bg); border:none; border-radius:20px; text-align:left; padding:0 15px; color:var(--gray);">What's on your mind?</button>
-        </div>
-        <textarea id="postTxt" style="width:100%; height:0; opacity:0;"></textarea>
-        <div id="pre-img"></div>
-        <div class="action-bar">
-            <label class="action-btn">📷 Photo<input type="file" id="postImg" hidden onchange="preview(this)"></label>
-            <button class="action-btn" onclick="submitPost()">🚀 Post</button>
+        <textarea id="pTxt" placeholder="What's on your mind?" style="width:100%; border:none; outline:none; height:50px; background:transparent; color:inherit;"></textarea>
+        <div id="pPre"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px;">
+            <input type="file" id="pImg" hidden onchange="preImg(this)">
+            <button onclick="document.getElementById('pImg').click()">🖼️ Photo</button>
+            <button onclick="addPost()" style="background:var(--fb-blue); color:white; border:none; padding:5px 15px; border-radius:5px;">Post</button>
         </div>
     </div>
 
     <div id="feed"></div>
 </div>
 
-<nav class="bottom-nav">
-    <div class="nav-item active" onclick="showTab('home')">🏠</div>
-    <div class="nav-item" onclick="showTab('friends')">👥<span id="req-badge" style="position:absolute; top:-5px; right:-10px; background:red; color:white; border-radius:50%; font-size:10px; padding:2px 5px; display:none;">0</span></div>
-    <div class="nav-item" onclick="showTab('chat')">💬</div>
-    <div class="nav-item" onclick="logout()">⚙️</div>
-</nav>
+<div id="chat-window">
+    <div style="padding:15px; background:var(--card); display:flex; align-items:center; gap:15px; border-bottom:1px solid #ddd;">
+        <b onclick="closeChat()">⬅️</b> <img id="chat-dp" class="dp" style="width:35px; height:35px;"> <b id="chat-name">User</b>
+    </div>
+    <div id="chat-msgs"></div>
+    <div style="padding:10px; display:flex; gap:10px; background:var(--card);">
+        <input type="text" id="cInp" placeholder="Type message..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
+        <button onclick="sendMsg()" style="border:none; background:none; font-size:22px;">🚀</button>
+    </div>
+</div>
 
-<div id="friends-overlay" class="overlay">
-    <div class="overlay-header"><span onclick="closeOverlay('friends-overlay')">⬅️</span> Friend Requests</div>
+<div id="req-overlay" class="overlay">
+    <div style="padding:15px; border-bottom:1px solid #ddd;"><b>⬅️</b> <span onclick="this.parentElement.parentElement.style.display='none'">Friend Requests</span></div>
     <div id="req-list" class="container"></div>
 </div>
 
-<div id="profile-overlay" class="overlay">
-    <div class="overlay-header"><span onclick="closeOverlay('profile-overlay')">⬅️</span> Profile</div>
-    <div class="container" style="text-align:center;">
-        <img id="v-dp" style="width:120px; height:120px; border-radius:50%; border:4px solid var(--fb-blue);">
-        <h2 id="v-name"></h2>
-        <div id="v-actions"></div>
+<div id="profile-settings" class="overlay">
+    <div class="container">
+        <h2>Edit Profile</h2>
+        <p>Display Name (Email hidden):</p>
+        <input type="text" id="newName" style="width:100%; padding:10px; margin-bottom:10px;">
+        <p>Profile Picture:</p>
+        <input type="file" onchange="upDP(this)">
+        <br><br>
+        <button onclick="saveProfile()" style="background:var(--fb-blue); color:white; padding:10px; border:none; width:100%;">Save Changes</button>
+        <button onclick="this.parentElement.parentElement.style.display='none'" style="width:100%; margin-top:10px;">Close</button>
     </div>
 </div>
 
@@ -107,111 +105,116 @@
         projectId: "massfrendz"
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
-    let me = null;
+    const auth = firebase.auth(); const db = firebase.database();
+    let me = null; let chatID = null; let otherUID = null;
 
     auth.onAuthStateChanged(user => {
-        if (user) {
+        if(user) {
             me = user;
-            db.ref('users/' + user.uid).on('value', s => {
+            db.ref('users/'+user.uid).on('value', s => {
                 const d = s.val() || { name: user.displayName, pic: user.photoURL, uid: user.uid };
-                document.getElementById('my-dp-top').src = d.pic;
-                const pics = document.querySelectorAll('.my-pic');
-                pics.forEach(p => p.src = d.pic);
-                if(!s.val()) db.ref('users/' + user.uid).set(d);
+                document.getElementById('my-top-dp').src = d.pic;
+                document.getElementById('newName').value = d.name;
+                if(!s.val()) db.ref('users/'+user.uid).set(d);
             });
             initApp();
         } else { auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
     });
 
-    // 1. REACTIONS (GOLD/SILVER)
-    window.react = (pid, type) => {
-        const rRef = db.ref(`likes/${pid}/${me.uid}`);
-        rRef.once('value', s => {
-            if(s.val() === type) {
-                db.ref(`posts/${pid}/${type}`).transaction(c => (c||0)-1);
-                rRef.remove();
-            } else {
-                db.ref(`posts/${pid}/${type}`).transaction(c => (c||0)+1);
-                rRef.set(type);
-            }
+    // 1. POST & FEED
+    window.addPost = () => {
+        const txt = document.getElementById('pTxt').value;
+        const file = document.getElementById('pImg').files[0];
+        const pushP = (img="") => {
+            db.ref('posts').push({ uid: me.uid, name: document.getElementById('newName').value, pic: document.getElementById('my-top-dp').src, text: txt, image: img, time: Date.now() });
+            document.getElementById('pTxt').value = ""; document.getElementById('pPre').innerHTML = "";
+        };
+        if(file) { const r = new FileReader(); r.onload=()=>pushP(r.result); r.readAsDataURL(file); } else if(txt) pushP();
+    };
+
+    // 2. CHAT LOGIC (DELETE FOR EVERYONE)
+    window.openChat = (uid, name, pic) => {
+        otherUID = uid; chatID = me.uid < uid ? me.uid+uid : uid+me.uid;
+        document.getElementById('chat-name').innerText = name;
+        document.getElementById('chat-dp').src = pic;
+        document.getElementById('chat-window').style.display = 'flex';
+        db.ref('chats/'+chatID).on('value', snap => {
+            const cont = document.getElementById('chat-msgs'); cont.innerHTML = "";
+            snap.forEach(c => {
+                const m = c.val(); const isMe = m.s === me.uid;
+                cont.innerHTML += `<div class="msg ${isMe?'msg-me':'msg-them'}" oncontextmenu="delMsg('${c.key}')">
+                    ${m.t} ${isMe ? `<small style="display:block; font-size:8px; opacity:0.5;">Hold to delete</small>` : ''}
+                </div>`;
+            });
         });
     };
 
-    // 2. PROFILE & REQUEST SYSTEM
-    window.openProfile = (uid) => {
-        db.ref('users/' + uid).once('value', s => {
-            const u = s.val();
-            document.getElementById('v-dp').src = u.pic;
-            document.getElementById('v-name').innerText = u.name;
-            document.getElementById('v-actions').innerHTML = `
-                <button onclick="sendReq('${uid}')" class="action-btn" style="background:var(--fb-blue); color:white; padding:10px 20px; border-radius:5px; margin:5px;">Add Friend</button>
-                <button onclick="alert('Chat coming soon!')" class="action-btn" style="background:#eee; padding:10px 20px; border-radius:5px; margin:5px;">Message</button>
-            `;
-            document.getElementById('profile-overlay').style.display = 'block';
-        });
+    window.sendMsg = () => {
+        const t = document.getElementById('cInp').value;
+        if(t) { db.ref('chats/'+chatID).push({ s: me.uid, t: t, time: Date.now() }); document.getElementById('cInp').value = ""; }
     };
 
+    window.delMsg = (mid) => {
+        if(confirm("Delete message for everyone?")) db.ref(`chats/${chatID}/${mid}`).update({t: "🚫 Message deleted"});
+    };
+
+    // 3. FRIEND REQUESTS (NAME & PROFILE FIX)
     window.sendReq = (uid) => {
-        db.ref(`requests/${uid}/${me.uid}`).set({ name: me.displayName, pic: me.photoURL });
-        alert("Friend Request Sent!");
+        db.ref('users/'+me.uid).once('value', s => {
+            db.ref(`requests/${uid}/${me.uid}`).set({ name: s.val().name, pic: s.val().pic, uid: me.uid });
+            alert("Request sent!");
+        });
     };
 
-    // 3. TAB SYSTEM
-    window.showTab = (tab) => {
-        if(tab === 'friends') document.getElementById('friends-overlay').style.display = 'block';
-        // Add chat logic here
+    // 4. STORIES WORKING
+    window.uploadStory = (i) => {
+        if(i.files[0]) {
+            const r = new FileReader();
+            r.onload = e => db.ref('stories/'+me.uid).set({ pic: document.getElementById('my-top-dp').src, img: e.target.result, name: me.displayName });
+            r.readAsDataURL(i.files[0]);
+        }
     };
-
-    window.closeOverlay = (id) => document.getElementById(id).style.display = 'none';
 
     function initApp() {
-        // Feed Listener
         db.ref('posts').on('value', snap => {
-            const cont = document.getElementById('feed');
-            cont.innerHTML = "";
+            const cont = document.getElementById('feed'); cont.innerHTML = "";
             snap.forEach(c => {
-                const p = c.val(); const pid = c.key;
-                cont.innerHTML = `
-                <div class="card">
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;" onclick="openProfile('${p.uid}')">
-                        <img src="${p.pic}" class="user-dp">
-                        <div><b>${p.name}</b><br><small style="color:var(--gray);">Just now</small></div>
+                const p = c.val();
+                cont.innerHTML = `<div class="card">
+                    <div style="display:flex; gap:10px; align-items:center;" onclick="openChat('${p.uid}','${p.name}','${p.pic}')">
+                        <img src="${p.pic}" class="dp"> <div><b>${p.name}</b></div>
                     </div>
                     <p>${p.text}</p>
-                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:8px; margin:10px 0;">` : ''}
-                    <div class="action-bar">
-                        <button class="action-btn" onclick="react('${pid}','gold')">🟡 ${p.gold||0} Gold</button>
-                        <button class="action-btn" onclick="react('${pid}','silver')">⚪ ${p.silver||0} Silver</button>
-                    </div>
+                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:8px;">` : ''}
+                    <button onclick="sendReq('${p.uid}')" style="margin-top:10px; font-size:12px;">Add Friend</button>
                 </div>` + cont.innerHTML;
             });
         });
 
-        // Request Badge
-        db.ref(`requests/${me.uid}`).on('value', s => {
-            const badge = document.getElementById('req-badge');
-            const count = s.numChildren();
-            if(count > 0) { badge.style.display = 'block'; badge.innerText = count; }
-            else badge.style.display = 'none';
+        db.ref('stories').on('value', snap => {
+            const cont = document.getElementById('story-list'); cont.innerHTML = "";
+            snap.forEach(s => {
+                cont.innerHTML += `<div class="story"><img src="${s.val().img}"><small style="position:absolute; bottom:5px; left:5px; color:white; font-size:10px;">${s.val().name}</small></div>`;
+            });
+        });
+
+        db.ref(`requests/${me.uid}`).on('value', snap => {
+            const cont = document.getElementById('req-list'); cont.innerHTML = "";
+            snap.forEach(r => {
+                const d = r.val();
+                cont.innerHTML += `<div class="user-row"><img src="${d.pic}" class="dp"> <b>${d.name}</b> <button onclick="accept('${r.key}')">Accept</button></div>`;
+            });
         });
     }
 
-    // UTILS
-    window.logout = () => auth.signOut();
-    window.preview = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>document.getElementById('pre-img').innerHTML=`<img src="${e.target.result}" style="width:100%; margin-top:10px; border-radius:8px;">`; r.readAsDataURL(i.files[0]); } };
-    window.updateDP = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>db.ref('users/'+me.uid).update({pic:e.target.result}); r.readAsDataURL(i.files[0]); } };
-    window.submitPost = () => {
-        const txt = prompt("What's on your mind?");
-        if(!txt) return;
-        const file = document.getElementById('postImg').files[0];
-        const push = (img="") => {
-            db.ref('posts').push({ uid: me.uid, name: me.displayName, pic: document.getElementById('my-dp-top').src, text: txt, image: img, gold:0, silver:0, time: Date.now() });
-            document.getElementById('pre-img').innerHTML="";
-        };
-        if(file) { const r = new FileReader(); r.onload=()=>push(r.result); r.readAsDataURL(file); } else push();
+    window.saveProfile = () => {
+        const n = document.getElementById('newName').value;
+        db.ref('users/'+me.uid).update({ name: n });
+        alert("Profile Updated!");
     };
+    window.showOverlay = (id) => document.getElementById(id).style.display = 'block';
+    window.closeChat = () => document.getElementById('chat-window').style.display = 'none';
+    window.preImg = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>document.getElementById('pPre').innerHTML=`<img src="${e.target.result}" style="width:100%; margin-top:10px;">`; r.readAsDataURL(i.files[0]); } };
 </script>
 </body>
 </html>
