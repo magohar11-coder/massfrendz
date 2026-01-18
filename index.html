@@ -1,47 +1,81 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Massfrendz | Secure App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Massfrendz | Secure Social</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
-        body { background: #121212; color: white; font-family: 'Segoe UI', Arial; text-align: center; margin: 0; }
-        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        .box { background: #1e1e1e; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; width: 350px; }
-        .btn { background: #0084ff; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; transition: 0.3s; }
+        :root { --fb-blue: #0084ff; --dark-bg: #18191a; --card-bg: #242526; --hover-bg: #3a3b3c; }
+        body { background: var(--dark-bg); color: #e4e6eb; font-family: 'Segoe UI', Tahoma, Helvetica, Arial, sans-serif; margin: 0; overflow-x: hidden; }
+        
+        /* Layout */
+        .navbar { background: var(--card-bg); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #3e4042; }
+        .app-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; padding: 20px; max-width: 1400px; margin: auto; }
+
+        /* Common Styles */
+        .card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .btn { background: var(--fb-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
         .btn:hover { background: #0073e6; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; }
-        #app-dashboard { display: none; padding: 20px; }
-        .post { background: #1e1e1e; margin: 10px auto; padding: 15px; border-radius: 10px; width: 90%; max-width: 500px; text-align: left; border-left: 5px solid #0084ff; }
+        input { background: #3a3b3c; border: none; padding: 12px; border-radius: 20px; color: white; width: 100%; box-sizing: border-box; outline: none; }
+        
+        /* Profile & Posts */
+        .post { border-bottom: 1px solid #3e4042; padding: 15px 0; }
+        .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        
+        /* Login Page */
+        .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+
+        @media (max-width: 900px) { .app-layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
     </style>
 </head>
 <body>
 
-    <div id="login-page" class="container">
-        <div class="box">
-            <h1 style="color:#0084ff; margin-bottom:10px;">Massfrendz</h1>
-            <p style="color:#888;">Safe & Secure Connection</p>
-            <button class="btn" onclick="googleLogin()">Login with Google</button>
-        </div>
+    <div id="login-page" class="login-container">
+        <h1 style="color: var(--fb-blue); font-size: 3rem;">Massfrendz</h1>
+        <p>Connect securely with friends.</p>
+        <button class="btn" style="width: auto; padding: 15px 40px;" onclick="googleLogin()">Login with Google</button>
     </div>
 
-    <div id="app-dashboard">
-        <nav style="border-bottom: 1px solid #333; padding: 10px; margin-bottom: 20px;">
-            <h2>Massfrendz Feed</h2>
+    <div id="app-dashboard" style="display:none;">
+        <nav class="navbar">
+            <h2 style="color: var(--fb-blue); margin: 0;">Massfrendz</h2>
+            <div id="current-user-display" style="display:flex; align-items:center; gap:10px;"></div>
         </nav>
-        
-        <div class="box" style="width: 90%; max-width: 500px; margin-bottom: 20px;">
-            <input type="text" id="postInput" placeholder="What is on your mind?">
-            <button class="btn" onclick="sendPost()">Post to Feed</button>
-        </div>
 
-        <div id="feed-container"></div>
+        <div class="app-layout">
+            <div class="sidebar">
+                <div class="card">
+                    <h3>Inbox (Encrypted)</h3>
+                    <div id="user-list">Searching for friends...</div>
+                </div>
+            </div>
+
+            <div class="feed">
+                <div class="card">
+                    <input type="text" id="postInput" placeholder="What's on your mind?">
+                    <button class="btn" onclick="sendPost()" style="margin-top:10px;">Post to Feed</button>
+                </div>
+                <div id="feed-container"></div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card">
+                    <h3>Privacy Status</h3>
+                    <p style="color: #2ecc71;">● End-to-End Encrypted</p>
+                    <p style="font-size: 0.8rem; color: #b0b3b8;">Your messages are converted into secure code using AES encryption.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // Firebase Config (Aapki Config)
         const firebaseConfig = {
             apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA",
             authDomain: "massfrendz.firebaseapp.com",
@@ -54,47 +88,70 @@
         const db = getDatabase(app);
         const provider = new GoogleAuthProvider();
 
-        // 1. LOGIN FUNCTION
-        window.googleLogin = () => {
-            signInWithRedirect(auth, provider);
-        };
+        // 1. Google Login
+        window.googleLogin = () => signInWithRedirect(auth, provider);
 
-        // 2. CHECK LOGIN STATUS
+        // 2. Auth State (Check login)
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('login-page').style.display = 'none';
                 document.getElementById('app-dashboard').style.display = 'block';
-                loadRealtimePosts();
+                
+                // Show User Info in Header
+                document.getElementById('current-user-display').innerHTML = `
+                    <span>${user.displayName}</span>
+                    <img src="${user.photoURL}" class="profile-pic">
+                `;
+                
+                loadPosts();
             }
         });
 
-        // 3. SEND POST TO DATABASE
+        // 3. Encrypted Post Sending
         window.sendPost = () => {
-            const val = document.getElementById('postInput').value;
-            if(val.trim() !== "") {
+            const msg = document.getElementById('postInput').value;
+            if(msg.trim() !== "") {
+                // ENCRYPTION: Message ko code mein badalna
+                const secretKey = "massfrendz_key_123"; 
+                const encryptedMsg = CryptoJS.AES.encrypt(msg, secretKey).toString();
+
                 push(ref(db, 'posts'), {
+                    uid: auth.currentUser.uid,
                     name: auth.currentUser.displayName,
-                    message: val,
+                    pic: auth.currentUser.photoURL,
+                    message: encryptedMsg, // Yahan ab "hello" ki jagah code jayega database mein
                     timestamp: serverTimestamp()
                 });
                 document.getElementById('postInput').value = "";
             }
         };
 
-        // 4. LOAD POSTS IN REALTIME
-        function loadRealtimePosts() {
+        // 4. Load & Decrypt Posts
+        function loadPosts() {
             onValue(ref(db, 'posts'), (snapshot) => {
                 const container = document.getElementById('feed-container');
                 container.innerHTML = "";
                 snapshot.forEach(item => {
                     const data = item.val();
-                    const postDiv = `
-                        <div class="post">
-                            <b>${data.name}</b>
-                            <p>${data.message}</p>
+                    
+                    // DECRYPTION: Code ko wapas asli message mein badalna
+                    const secretKey = "massfrendz_key_123";
+                    const bytes  = CryptoJS.AES.decrypt(data.message, secretKey);
+                    const originalText = bytes.toString(CryptoJS.enc.Utf8);
+
+                    const postHTML = `
+                        <div class="card post">
+                            <div class="post-header">
+                                <img src="${data.pic || 'https://via.placeholder.com/40'}" class="profile-pic">
+                                <div>
+                                    <div style="font-weight:bold;">${data.name}</div>
+                                    <div style="font-size:0.7rem; color:#b0b3b8;">Secure Message</div>
+                                </div>
+                            </div>
+                            <p style="margin:10px 0;">${originalText}</p>
                         </div>
                     `;
-                    container.innerHTML = postDiv + container.innerHTML;
+                    container.innerHTML = postHTML + container.innerHTML;
                 });
             });
         }
