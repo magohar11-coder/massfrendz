@@ -3,97 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz Pro | Gohar</title>
+    <title>Massfrendz Green | M.A. Gohar</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
     <style>
-        :root { --fb-blue: #1877f2; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; }
-        [data-theme="dark"] { --bg: #18191a; --card: #242526; --text: #e4e6eb; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-bottom: 60px; }
+        :root { --green: #25d366; --dark-green: #075e54; --bg: #e5ddd5; --white: #ffffff; --text: #1c1e21; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 60px; }
 
-        header { position: sticky; top: 0; background: var(--card); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000; }
-        .logo { font-size: 24px; font-weight: 800; color: var(--fb-blue); }
+        /* Green Header */
+        header { position: sticky; top: 0; background: var(--dark-green); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .logo { font-size: 22px; font-weight: 800; letter-spacing: 1px; }
+
+        /* Search Bar */
+        .search-container { padding: 10px; background: var(--white); border-bottom: 1px solid #ddd; display: flex; gap: 5px; }
+        #userSearch { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
 
         .container { max-width: 600px; margin: auto; padding: 10px; }
-        .card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .card { background: var(--white); border-radius: 10px; padding: 15px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         
-        /* Story UI */
-        .story-box { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; }
-        .story { min-width: 90px; height: 150px; background: #333; border-radius: 10px; position: relative; overflow: hidden; border: 1px solid #ddd; }
-        .story img { width: 100%; height: 100%; object-fit: cover; }
+        /* Story System */
+        .story-tray { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+        .story-item { min-width: 85px; height: 140px; background: #000; border-radius: 12px; position: relative; border: 2px solid var(--green); overflow: hidden; }
+        .story-item img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+        .story-name { position: absolute; bottom: 5px; left: 5px; color: white; font-size: 10px; font-weight: bold; }
 
-        /* Chat Window */
-        #chat-window { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 5000; display: none; flex-direction: column; }
-        #chat-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .msg { padding: 10px; border-radius: 15px; max-width: 75%; position: relative; }
-        .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; }
-        .msg-them { background: #ddd; color: black; align-self: flex-start; }
-        
-        .user-row { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; }
-        .dp { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--fb-blue); }
-        
-        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 4000; display: none; }
+        /* Floating Chat UI */
+        #chat-ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ece5dd; z-index: 5000; display: none; flex-direction: column; }
+        .chat-header { background: var(--dark-green); color: white; padding: 15px; display: flex; align-items: center; gap: 10px; }
+        #chat-msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        .bubble { padding: 10px; border-radius: 10px; max-width: 80%; position: relative; font-size: 14px; }
+        .b-me { background: #dcf8c6; align-self: flex-end; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .b-them { background: white; align-self: flex-start; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+
+        .dp { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white; }
+        .btn-green { background: var(--green); color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .logout-link { color: #ffeb3b; font-size: 12px; text-decoration: underline; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo">massfrendz</div>
-    <div style="display:flex; gap:10px;">
-        <button onclick="showOverlay('profile-settings')" style="border:none; background:none; font-size:20px;">⚙️</button>
-        <img id="my-top-dp" class="dp" style="width:32px; height:32px;" onclick="showOverlay('req-overlay')">
+    <div class="logo">MASSFRENDZ</div>
+    <div style="display:flex; align-items:center; gap:12px;">
+        <span class="logout-link" onclick="handleLogout()">Logout</span>
+        <img id="my-avatar" class="dp" src="" onclick="showProfileEdit()">
     </div>
 </header>
 
+<div class="search-container">
+    <input type="text" id="userSearch" placeholder="🔍 Search friends by name..." oninput="searchUsers(this.value)">
+</div>
+
 <div class="container">
-    <div class="story-box">
-        <div class="story" onclick="document.getElementById('stInp').click()" style="background:#eee; display:flex; align-items:center; justify-content:center; color:#666;"><b>+ Story</b></div>
-        <input type="file" id="stInp" hidden onchange="uploadStory(this)">
+    <div class="story-tray">
+        <div class="story-item" onclick="document.getElementById('stInp').click()" style="background:var(--white); display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--dark-green);">
+            <b style="font-size:24px;">+</b><small>Add Story</small>
+            <input type="file" id="stInp" hidden onchange="pushStory(this)">
+        </div>
         <div id="story-list" style="display:flex; gap:10px;"></div>
     </div>
 
     <div class="card">
-        <textarea id="pTxt" placeholder="What's on your mind?" style="width:100%; border:none; outline:none; height:50px; background:transparent; color:inherit;"></textarea>
-        <div id="pPre"></div>
-        <div style="display:flex; justify-content:space-between; margin-top:10px;">
-            <input type="file" id="pImg" hidden onchange="preImg(this)">
-            <button onclick="document.getElementById('pImg').click()">🖼️ Photo</button>
-            <button onclick="addPost()" style="background:var(--fb-blue); color:white; border:none; padding:5px 15px; border-radius:5px;">Post</button>
+        <textarea id="postText" placeholder="What's on your mind?" style="width:100%; border:none; outline:none; height:40px; font-size:16px;"></textarea>
+        <div id="img-pre"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+            <input type="file" id="postImg" hidden onchange="doPre(this)">
+            <button onclick="document.getElementById('postImg').click()" style="background:none; border:none; font-size:20px;">🖼️</button>
+            <button class="btn-green" onclick="submitPost()">Post</button>
         </div>
+    </div>
+
+    <div id="req-box" style="display:none;" class="card">
+        <h4 style="margin:0 0 10px 0; color:var(--dark-green);">Friend Requests</h4>
+        <div id="req-list"></div>
     </div>
 
     <div id="feed"></div>
 </div>
 
-<div id="chat-window">
-    <div style="padding:15px; background:var(--card); display:flex; align-items:center; gap:15px; border-bottom:1px solid #ddd;">
-        <b onclick="closeChat()">⬅️</b> <img id="chat-dp" class="dp" style="width:35px; height:35px;"> <b id="chat-name">User</b>
+<div id="chat-ui">
+    <div class="chat-header">
+        <b onclick="document.getElementById('chat-ui').style.display='none'" style="cursor:pointer; font-size:20px;">←</b>
+        <img id="c-dp" class="dp">
+        <span id="c-name">User</span>
     </div>
     <div id="chat-msgs"></div>
-    <div style="padding:10px; display:flex; gap:10px; background:var(--card);">
-        <input type="text" id="cInp" placeholder="Type message..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
-        <button onclick="sendMsg()" style="border:none; background:none; font-size:22px;">🚀</button>
-    </div>
-</div>
-
-<div id="req-overlay" class="overlay">
-    <div style="padding:15px; border-bottom:1px solid #ddd;"><b>⬅️</b> <span onclick="this.parentElement.parentElement.style.display='none'">Friend Requests</span></div>
-    <div id="req-list" class="container"></div>
-</div>
-
-<div id="profile-settings" class="overlay">
-    <div class="container">
-        <h2>Edit Profile</h2>
-        <p>Display Name (Email hidden):</p>
-        <input type="text" id="newName" style="width:100%; padding:10px; margin-bottom:10px;">
-        <p>Profile Picture:</p>
-        <input type="file" onchange="upDP(this)">
-        <br><br>
-        <button onclick="saveProfile()" style="background:var(--fb-blue); color:white; padding:10px; border:none; width:100%;">Save Changes</button>
-        <button onclick="this.parentElement.parentElement.style.display='none'" style="width:100%; margin-top:10px;">Close</button>
+    <div style="padding:10px; background:white; display:flex; gap:10px;">
+        <input type="text" id="msgInp" placeholder="Type a message" style="flex:1; padding:12px; border-radius:25px; border:1px solid #ddd; outline:none;">
+        <button onclick="sendMsg()" style="border:none; background:var(--dark-green); color:white; width:45px; height:45px; border-radius:50%;">🚀</button>
     </div>
 </div>
 
@@ -106,115 +106,135 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
-    let me = null; let chatID = null; let otherUID = null;
+    let me = null; let curChat = null; let curID = null;
 
     auth.onAuthStateChanged(user => {
         if(user) {
             me = user;
             db.ref('users/'+user.uid).on('value', s => {
                 const d = s.val() || { name: user.displayName, pic: user.photoURL, uid: user.uid };
-                document.getElementById('my-top-dp').src = d.pic;
-                document.getElementById('newName').value = d.name;
+                document.getElementById('my-avatar').src = d.pic;
                 if(!s.val()) db.ref('users/'+user.uid).set(d);
             });
-            initApp();
+            loadApp();
         } else { auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
     });
 
-    // 1. POST & FEED
-    window.addPost = () => {
-        const txt = document.getElementById('pTxt').value;
-        const file = document.getElementById('pImg').files[0];
-        const pushP = (img="") => {
-            db.ref('posts').push({ uid: me.uid, name: document.getElementById('newName').value, pic: document.getElementById('my-top-dp').src, text: txt, image: img, time: Date.now() });
-            document.getElementById('pTxt').value = ""; document.getElementById('pPre').innerHTML = "";
-        };
-        if(file) { const r = new FileReader(); r.onload=()=>pushP(r.result); r.readAsDataURL(file); } else if(txt) pushP();
+    // 1. SEARCH FRIENDS
+    window.searchUsers = (val) => {
+        if(val.length < 2) { loadApp(); return; }
+        db.ref('users').orderByChild('name').startAt(val).endAt(val+"\uf8ff").once('value', snap => {
+            const cont = document.getElementById('feed'); cont.innerHTML = "<h4>Search Results:</h4>";
+            snap.forEach(u => {
+                if(u.key !== me.uid) {
+                    cont.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img src="${u.val().pic}" class="dp"> <b>${u.val().name}</b>
+                        </div>
+                        <button class="btn-green" onclick="sendFriendReq('${u.key}')">Add Friend</button>
+                    </div>`;
+                }
+            });
+        });
     };
 
-    // 2. CHAT LOGIC (DELETE FOR EVERYONE)
-    window.openChat = (uid, name, pic) => {
-        otherUID = uid; chatID = me.uid < uid ? me.uid+uid : uid+me.uid;
-        document.getElementById('chat-name').innerText = name;
-        document.getElementById('chat-dp').src = pic;
-        document.getElementById('chat-window').style.display = 'flex';
-        db.ref('chats/'+chatID).on('value', snap => {
+    // 2. CHAT & DELETE
+    window.openPersonalChat = (uid, name, pic) => {
+        curChat = uid; curID = me.uid < uid ? me.uid+uid : uid+me.uid;
+        document.getElementById('c-name').innerText = name;
+        document.getElementById('c-dp').src = pic;
+        document.getElementById('chat-ui').style.display = 'flex';
+        db.ref('chats/'+curID).on('value', snap => {
             const cont = document.getElementById('chat-msgs'); cont.innerHTML = "";
             snap.forEach(c => {
                 const m = c.val(); const isMe = m.s === me.uid;
-                cont.innerHTML += `<div class="msg ${isMe?'msg-me':'msg-them'}" oncontextmenu="delMsg('${c.key}')">
-                    ${m.t} ${isMe ? `<small style="display:block; font-size:8px; opacity:0.5;">Hold to delete</small>` : ''}
+                cont.innerHTML += `<div class="bubble ${isMe?'b-me':'b-them'}" oncontextmenu="deleteMsg('${c.key}'); return false;">
+                    ${m.t}
                 </div>`;
             });
+            cont.scrollTop = cont.scrollHeight;
         });
     };
 
     window.sendMsg = () => {
-        const t = document.getElementById('cInp').value;
-        if(t) { db.ref('chats/'+chatID).push({ s: me.uid, t: t, time: Date.now() }); document.getElementById('cInp').value = ""; }
+        const t = document.getElementById('msgInp').value;
+        if(t) { db.ref('chats/'+curID).push({ s: me.uid, t: t, time: Date.now() }); document.getElementById('msgInp').value = ""; }
     };
 
-    window.delMsg = (mid) => {
-        if(confirm("Delete message for everyone?")) db.ref(`chats/${chatID}/${mid}`).update({t: "🚫 Message deleted"});
+    window.deleteMsg = (mid) => {
+        if(confirm("Delete for everyone?")) db.ref(`chats/${curID}/${mid}`).update({t: "🚫 Message deleted"});
     };
 
-    // 3. FRIEND REQUESTS (NAME & PROFILE FIX)
-    window.sendReq = (uid) => {
-        db.ref('users/'+me.uid).once('value', s => {
-            db.ref(`requests/${uid}/${me.uid}`).set({ name: s.val().name, pic: s.val().pic, uid: me.uid });
-            alert("Request sent!");
-        });
-    };
-
-    // 4. STORIES WORKING
-    window.uploadStory = (i) => {
+    // 3. STORIES & LOGOUT
+    window.pushStory = (i) => {
         if(i.files[0]) {
             const r = new FileReader();
-            r.onload = e => db.ref('stories/'+me.uid).set({ pic: document.getElementById('my-top-dp').src, img: e.target.result, name: me.displayName });
+            r.onload = e => db.ref('stories/'+me.uid).set({ pic: document.getElementById('my-avatar').src, img: e.target.result, name: me.displayName, time: Date.now() });
             r.readAsDataURL(i.files[0]);
         }
     };
 
-    function initApp() {
+    window.handleLogout = () => {
+        if(confirm("Are you sure you want to Logout?")) {
+            auth.signOut().then(() => { window.location.reload(); });
+        }
+    };
+
+    // 4. FRIEND REQUESTS
+    window.sendFriendReq = (uid) => {
+        db.ref(`requests/${uid}/${me.uid}`).set({ name: me.displayName, pic: document.getElementById('my-avatar').src, uid: me.uid });
+        alert("Request Sent!");
+    };
+
+    function loadApp() {
+        // Load Feed
         db.ref('posts').on('value', snap => {
             const cont = document.getElementById('feed'); cont.innerHTML = "";
             snap.forEach(c => {
                 const p = c.val();
                 cont.innerHTML = `<div class="card">
-                    <div style="display:flex; gap:10px; align-items:center;" onclick="openChat('${p.uid}','${p.name}','${p.pic}')">
+                    <div style="display:flex; gap:10px; align-items:center;" onclick="openPersonalChat('${p.uid}','${p.name}','${p.pic}')">
                         <img src="${p.pic}" class="dp"> <div><b>${p.name}</b></div>
                     </div>
                     <p>${p.text}</p>
                     ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:8px;">` : ''}
-                    <button onclick="sendReq('${p.uid}')" style="margin-top:10px; font-size:12px;">Add Friend</button>
                 </div>` + cont.innerHTML;
             });
         });
 
+        // Load Stories
         db.ref('stories').on('value', snap => {
             const cont = document.getElementById('story-list'); cont.innerHTML = "";
             snap.forEach(s => {
-                cont.innerHTML += `<div class="story"><img src="${s.val().img}"><small style="position:absolute; bottom:5px; left:5px; color:white; font-size:10px;">${s.val().name}</small></div>`;
+                cont.innerHTML += `<div class="story-item"><img src="${s.val().img}"><span class="story-name">${s.val().name}</span></div>`;
             });
         });
 
+        // Load Requests
         db.ref(`requests/${me.uid}`).on('value', snap => {
-            const cont = document.getElementById('req-list'); cont.innerHTML = "";
-            snap.forEach(r => {
-                const d = r.val();
-                cont.innerHTML += `<div class="user-row"><img src="${d.pic}" class="dp"> <b>${d.name}</b> <button onclick="accept('${r.key}')">Accept</button></div>`;
-            });
+            const rBox = document.getElementById('req-box'); const rList = document.getElementById('req-list');
+            rList.innerHTML = "";
+            if(snap.exists()) {
+                rBox.style.display = 'block';
+                snap.forEach(r => {
+                    rList.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span>${r.val().name}</span> <button class="btn-green" style="padding:2px 8px;" onclick="alert('Accepted')">Accept</button>
+                    </div>`;
+                });
+            } else { rBox.style.display = 'none'; }
         });
     }
 
-    window.saveProfile = () => {
-        const n = document.getElementById('newName').value;
-        db.ref('users/'+me.uid).update({ name: n });
-        alert("Profile Updated!");
+    window.submitPost = () => {
+        const txt = document.getElementById('postText').value;
+        const file = document.getElementById('postImg').files[0];
+        const push = (img="") => {
+            db.ref('posts').push({ uid: me.uid, name: me.displayName, pic: document.getElementById('my-avatar').src, text: txt, image: img, time: Date.now() });
+            document.getElementById('postText').value = ""; document.getElementById('img-pre').innerHTML = "";
+        };
+        if(file) { const r = new FileReader(); r.onload=()=>push(r.result); r.readAsDataURL(file); } else if(txt) push();
     };
-    window.showOverlay = (id) => document.getElementById(id).style.display = 'block';
-    window.closeChat = () => document.getElementById('chat-window').style.display = 'none';
-    window.preImg = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>document.getElementById('pPre').innerHTML=`<img src="${e.target.result}" style="width:100%; margin-top:10px;">`; r.readAsDataURL(i.files[0]); } };
+    window.doPre = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>document.getElementById('img-pre').innerHTML=`<img src="${e.target.result}" style="width:100%; border-radius:8px; margin-top:10px;">`; r.readAsDataURL(i.files[0]); } };
 </script>
 </body>
 </html>
