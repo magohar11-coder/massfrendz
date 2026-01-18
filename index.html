@@ -10,90 +10,66 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --neon: #1877f2; --gold: #ffd700; --silver: #c0c0c0; --border: #ddd; }
-        [data-theme="dark"] { --bg: #0a0b10; --card: #161b22; --text: #e6edf3; --neon: #00f3ff; --border: #30363d; }
+        :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --neon: #1877f2; }
+        [data-theme="dark"] { --bg: #0a0b10; --card: #161b22; --text: #e6edf3; --neon: #00f3ff; }
         
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; margin: 0; padding-top: 75px; padding-bottom: 80px; transition: 0.3s; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-top: 75px; padding-bottom: 80px; }
 
-        /* Branding Headers & Footers (FREEZE) */
-        header { position: fixed; top: 0; width: 100%; height: 70px; background: var(--card); border-bottom: 3px solid var(--neon); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        footer { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 3px solid var(--neon); padding: 15px 0; text-align: center; font-size: 24px; font-weight: 800; color: var(--neon); z-index: 1000; text-transform: uppercase; }
+        /* Freeze Header & Footer */
+        header { position: fixed; top: 0; width: 100%; height: 70px; background: var(--card); border-bottom: 3px solid var(--neon); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; box-sizing: border-box; }
+        footer { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 3px solid var(--neon); padding: 15px 0; text-align: center; font-size: 22px; font-weight: 800; color: var(--neon); z-index: 1000; width: 100%; }
 
-        .container { display: flex; flex-direction: column; gap: 15px; max-width: 800px; margin: auto; padding: 15px; }
-        .card { background: var(--card); border-radius: 12px; padding: 15px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-
-        /* DP & Story Circular UI */
-        .dp-circle { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--neon); cursor: pointer; }
-        .story-btn { min-width: 65px; height: 65px; border-radius: 50%; border: 2px dashed var(--neon); display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; background: var(--bg); }
-
-        /* Responsive Grid for PC */
-        @media (min-width: 900px) {
-            .container { display: grid; grid-template-columns: 280px 1fr 280px; max-width: 1300px; align-items: start; }
-        }
-
-        /* Buttons & Inputs */
-        .btn-blue { background: var(--neon); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        textarea { width: 100%; border: none; outline: none; background: transparent; color: inherit; font-size: 16px; resize: none; }
+        .main-container { max-width: 800px; margin: auto; padding: 10px; display: flex; flex-direction: column; gap: 15px; }
+        .card { background: var(--card); border-radius: 15px; padding: 15px; border: 1px solid rgba(0,0,0,0.1); }
+        
+        /* Mobile Specific UI */
+        .story-btn { min-width: 60px; height: 60px; border-radius: 50%; border: 2px dashed var(--neon); display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; }
+        .post-input { width: 100%; border: none; outline: none; background: transparent; color: inherit; font-size: 16px; padding: 10px 0; }
+        .dp-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--neon); object-fit: cover; }
+        
+        .btn-post { background: var(--neon); color: white; border: none; padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        #preview-box img { width: 100%; border-radius: 10px; margin-top: 10px; }
+        
+        /* Reaction Pop */
+        .react-btn { border: none; background: none; font-size: 20px; cursor: pointer; transition: 0.2s; }
+        .react-btn:active { transform: scale(1.5); }
     </style>
 </head>
-<body data-theme="light">
+<body>
 
 <header>
-    <div style="font-size: 28px; font-weight: 900; color: var(--neon);">MASSFRENDZ</div>
+    <div style="font-size: 26px; font-weight: 900; color: var(--neon);">MASSFRENDZ</div>
     <div style="display:flex; align-items:center; gap:10px;">
-        <input type="text" id="globalSearch" placeholder="Search..." style="padding:8px; border-radius:15px; border:1px solid var(--border); width: 120px;">
-        <label>
-            <img id="my-dp-img" class="dp-circle" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-            <input type="file" id="dpInput" hidden onchange="updateDP(this)">
+        <label title="Change DP">
+            <img id="my-profile-pic" class="dp-img" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+            <input type="file" id="dpFile" hidden onchange="updateProfilePic(this)">
         </label>
     </div>
 </header>
 
-<div class="container">
-    <div class="side-panel">
-        <div class="card">
-            <h3>👥 Global Users</h3>
-            <div id="user-list">Loading users...</div>
-        </div>
-        <div class="card">
-            <h3>📩 Requests</h3>
-            <div id="req-list">No new requests</div>
+<div class="main-container">
+    <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
+        <div class="story-btn" onclick="document.getElementById('storyFile').click()">+</div>
+        <input type="file" id="storyFile" hidden onchange="uploadStory(this)">
+        <div id="story-row" style="display:flex; gap:10px;"></div>
+    </div>
+
+    <div class="card">
+        <textarea id="postText" class="post-input" placeholder="What's on your mind?"></textarea>
+        <div id="preview-box"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+            <label style="cursor:pointer; font-size:22px;">🖼️<input type="file" id="postFile" hidden onchange="previewImg(this)"></label>
+            <select id="postPriv"><option value="public">🌍 Public</option><option value="friends">👥 Friends</option></select>
+            <button onclick="sendPost()" class="btn-post">POST</button>
         </div>
     </div>
 
-    <div class="feed-panel">
-        <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
-            <div class="story-btn" onclick="document.getElementById('storyInput').click()">+</div>
-            <input type="file" id="storyInput" hidden onchange="postStatus(this)">
-            <div id="story-row" style="display:flex; gap:10px;"></div>
-        </div>
-
-        <div class="card">
-            <textarea id="postText" placeholder="What's on your mind, Gohar?"></textarea>
-            <div id="img-preview" style="margin-top:10px;"></div>
-            <hr style="opacity:0.2; margin:15px 0;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <label style="cursor:pointer; font-size:20px;">🖼️<input type="file" id="postFile" hidden onchange="showPreview(this)"></label>
-                <select id="postPrivacy" style="border-radius:5px;"><option value="public">Public</option><option value="friends">Friends</option></select>
-                <button onclick="savePost()" class="btn-blue">POST</button>
-            </div>
-        </div>
-        <div id="feed-cont"></div>
-    </div>
-
-    <div class="side-panel">
-        <div class="card">
-            <h3>💬 My Friends</h3>
-            <div id="friends-list">Add friends to chat</div>
-        </div>
-        <button onclick="document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark'" class="btn-blue" style="width:100%">🌗 Toggle Mode</button>
-    </div>
+    <div id="feed-items"></div>
 </div>
 
 <footer>Powered by M.A.GOHAR</footer>
 
 <script>
-    // Universal Config Fix
     const firebaseConfig = {
         apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA",
         authDomain: "massfrendz.firebaseapp.com",
@@ -106,66 +82,92 @@
     const db = firebase.database();
     let me = null;
 
+    // Fix: Refresh Loop Control
     auth.onAuthStateChanged(user => {
         if (user) {
             me = user;
-            db.ref('users/' + user.uid).on('value', s => {
+            // Load user data once, don't refresh every time
+            db.ref('users/' + user.uid).once('value', s => {
                 const data = s.val() || { name: user.displayName, pic: user.photoURL, uid: user.uid };
-                document.getElementById('my-dp-img').src = data.pic;
+                document.getElementById('my-profile-pic').src = data.pic;
                 if(!s.val()) db.ref('users/' + user.uid).set(data);
             });
-            runApp();
+            startApp();
         } else {
-            auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+            // Only redirect if not already on the login process
+            if(!window.location.hash.includes("confirm")) {
+                auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+            }
         }
     });
 
-    // DP Update Logic
-    window.updateDP = (input) => {
+    // --- DP CHANGE ---
+    window.updateProfilePic = (input) => {
         if (input.files[0]) {
-            const r = new FileReader();
-            r.onload = e => db.ref('users/' + me.uid).update({ pic: e.target.result });
-            r.readAsDataURL(input.files[0]);
+            const reader = new FileReader();
+            reader.onload = e => {
+                const newPic = e.target.result;
+                db.ref('users/' + me.uid).update({ pic: newPic });
+                document.getElementById('my-profile-pic').src = newPic;
+            };
+            reader.readAsDataURL(input.files[0]);
         }
     };
 
-    // Post Logic
-    window.showPreview = (input) => {
+    // --- POST WITH IMAGE & PREVIEW ---
+    window.previewImg = (input) => {
         if (input.files[0]) {
-            const r = new FileReader();
-            r.onload = e => document.getElementById('img-preview').innerHTML = `<img src="${e.target.result}" style="width:100%; border-radius:10px;">`;
-            r.readAsDataURL(input.files[0]);
+            const reader = new FileReader();
+            reader.onload = e => document.getElementById('preview-box').innerHTML = `<img src="${e.target.result}">`;
+            reader.readAsDataURL(input.files[0]);
         }
     };
 
-    window.savePost = () => {
+    window.sendPost = () => {
         const txt = document.getElementById('postText').value;
         const file = document.getElementById('postFile').files[0];
-        const priv = document.getElementById('postPrivacy').value;
+        const priv = document.getElementById('postPriv').value;
 
-        const pushData = (img = "") => {
+        const save = (img = "") => {
             db.ref('posts').push({
-                uid: me.uid, name: me.displayName, pic: document.getElementById('my-dp-img').src,
-                text: txt, image: img, privacy: priv, time: Date.now()
+                uid: me.uid, name: me.displayName, pic: document.getElementById('my-profile-pic').src,
+                text: txt, image: img, privacy: priv, gold: 0, silver: 0, time: Date.now()
             });
+            // Reset
             document.getElementById('postText').value = "";
-            document.getElementById('img-preview').innerHTML = "";
+            document.getElementById('preview-box').innerHTML = "";
             document.getElementById('postFile').value = "";
         };
 
         if(file) {
             const r = new FileReader(); r.readAsDataURL(file);
-            r.onload = () => pushData(r.result);
-        } else if(txt) pushData("");
+            r.onload = () => save(r.result);
+        } else if(txt) save("");
     };
 
-    function runApp() {
+    // --- UNDO REACTION LOGIC ---
+    window.react = (pid, type) => {
+        const rRef = db.ref(`reactions/${pid}/${me.uid}`);
+        rRef.once('value', s => {
+            const pRef = db.ref(`posts/${pid}/${type}`);
+            if (s.val() === type) {
+                pRef.transaction(c => Math.max(0, (c || 0) - 1));
+                rRef.remove();
+            } else {
+                pRef.transaction(c => (c || 0) + 1);
+                rRef.set(type);
+            }
+        });
+    };
+
+    function startApp() {
         // Feed Listener
-        db.ref('posts').on('value', snap => {
-            const cont = document.getElementById('feed-cont');
+        db.ref('posts').limitToLast(20).on('value', snap => {
+            const cont = document.getElementById('feed-items');
             cont.innerHTML = "";
             snap.forEach(child => {
                 const p = child.val();
+                const pid = child.key;
                 cont.innerHTML = `
                 <div class="card">
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
@@ -173,30 +175,15 @@
                         <b>${p.name}</b>
                     </div>
                     <p>${p.text}</p>
-                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:8px;">` : ''}
+                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:10px;">` : ''}
+                    <div style="margin-top:10px; display:flex; gap:20px;">
+                        <button class="react-btn" onclick="react('${pid}', 'gold')">🟡 ${p.gold || 0}</button>
+                        <button class="react-btn" onclick="react('${pid}', 'silver')">⚪ ${p.silver || 0}</button>
+                    </div>
                 </div>` + cont.innerHTML;
             });
         });
-
-        // Global Users & Request Logic
-        db.ref('users').on('value', snap => {
-            const cont = document.getElementById('user-list');
-            cont.innerHTML = "";
-            snap.forEach(u => {
-                if(u.key !== me.uid) {
-                    cont.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <span>${u.val().name}</span>
-                        <button onclick="sendReq('${u.key}')" style="color:var(--neon); border:none; background:none; cursor:pointer;">Add +</button>
-                    </div>`;
-                }
-            });
-        });
     }
-
-    window.sendReq = (id) => {
-        db.ref(`requests/${id}/${me.uid}`).set({ from: me.uid, name: me.displayName });
-        alert("Request Sent!");
-    };
 </script>
 </body>
 </html>
