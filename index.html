@@ -3,68 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz Pro | M.A. Gohar</title>
+    <title>Massfrendz Pro | Gohar Edition</title>
     
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
     <style>
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --neon: #1877f2; }
         [data-theme="dark"] { --bg: #0a0b10; --card: #161b22; --text: #e6edf3; --neon: #00f3ff; }
         
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-top: 75px; padding-bottom: 80px; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; margin: 0; padding-top: 70px; padding-bottom: 70px; }
 
-        /* Freeze Header & Footer */
-        header { position: fixed; top: 0; width: 100%; height: 70px; background: var(--card); border-bottom: 3px solid var(--neon); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; box-sizing: border-box; }
-        footer { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 3px solid var(--neon); padding: 15px 0; text-align: center; font-size: 22px; font-weight: 800; color: var(--neon); z-index: 1000; width: 100%; }
+        /* Branding Headers & Footers (Strictly Fixed) */
+        header { position: fixed; top: 0; width: 100%; height: 65px; background: var(--card); border-bottom: 3px solid var(--neon); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 2000; box-sizing: border-box; }
+        footer { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 3px solid var(--neon); padding: 12px 0; text-align: center; font-size: 22px; font-weight: 800; color: var(--neon); z-index: 2000; text-transform: uppercase; letter-spacing: 1px; }
 
-        .main-container { max-width: 800px; margin: auto; padding: 10px; display: flex; flex-direction: column; gap: 15px; }
-        .card { background: var(--card); border-radius: 15px; padding: 15px; border: 1px solid rgba(0,0,0,0.1); }
+        .app-container { max-width: 600px; margin: auto; padding: 10px; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        /* Profile & Post Elements */
+        .user-dp { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--neon); }
+        .post-input { width: 100%; border: none; outline: none; background: transparent; color: inherit; font-size: 16px; min-height: 60px; resize: none; }
+        .btn-main { background: var(--neon); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
         
-        /* Mobile Specific UI */
-        .story-btn { min-width: 60px; height: 60px; border-radius: 50%; border: 2px dashed var(--neon); display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; }
-        .post-input { width: 100%; border: none; outline: none; background: transparent; color: inherit; font-size: 16px; padding: 10px 0; }
-        .dp-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--neon); object-fit: cover; }
-        
-        .btn-post { background: var(--neon); color: white; border: none; padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        #preview-box img { width: 100%; border-radius: 10px; margin-top: 10px; }
-        
-        /* Reaction Pop */
-        .react-btn { border: none; background: none; font-size: 20px; cursor: pointer; transition: 0.2s; }
-        .react-btn:active { transform: scale(1.5); }
+        #preview-area img { width: 100%; border-radius: 10px; margin-top: 10px; }
+        .feed-img { width: 100%; border-radius: 10px; margin-top: 10px; display: block; }
+
+        /* Hidden Login Loader */
+        #auth-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index: 3000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
+<div id="auth-overlay">Massfrendz Loading...</div>
+
 <header>
-    <div style="font-size: 26px; font-weight: 900; color: var(--neon);">MASSFRENDZ</div>
+    <div style="font-size: 24px; font-weight: 900; color: var(--neon);">MASSFRENDZ</div>
     <div style="display:flex; align-items:center; gap:10px;">
-        <label title="Change DP">
-            <img id="my-profile-pic" class="dp-img" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-            <input type="file" id="dpFile" hidden onchange="updateProfilePic(this)">
+        <label>
+            <img id="header-dp" class="user-dp" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+            <input type="file" id="dpFile" hidden onchange="uploadDP(this)">
         </label>
     </div>
 </header>
 
-<div class="main-container">
+<div class="app-container">
     <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
-        <div class="story-btn" onclick="document.getElementById('storyFile').click()">+</div>
-        <input type="file" id="storyFile" hidden onchange="uploadStory(this)">
-        <div id="story-row" style="display:flex; gap:10px;"></div>
+        <div style="min-width:60px; height:60px; border-radius:50%; border:2px dashed var(--neon); display:flex; align-items:center; justify-content:center; font-size:30px; cursor:pointer;" onclick="document.getElementById('statusFile').click()">+</div>
+        <input type="file" id="statusFile" hidden onchange="uploadStatus(this)">
+        <div id="status-row" style="display:flex; gap:10px;"></div>
     </div>
 
     <div class="card">
-        <textarea id="postText" class="post-input" placeholder="What's on your mind?"></textarea>
-        <div id="preview-box"></div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-            <label style="cursor:pointer; font-size:22px;">🖼️<input type="file" id="postFile" hidden onchange="previewImg(this)"></label>
-            <select id="postPriv"><option value="public">🌍 Public</option><option value="friends">👥 Friends</option></select>
-            <button onclick="sendPost()" class="btn-post">POST</button>
+        <textarea id="postTxt" class="post-input" placeholder="What's on your mind?"></textarea>
+        <div id="preview-area"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+            <label style="cursor:pointer; font-size:22px;">🖼️<input type="file" id="postImg" hidden onchange="previewPost(this)"></label>
+            <button onclick="submitPost()" class="btn-main">Post</button>
         </div>
     </div>
 
-    <div id="feed-items"></div>
+    <div id="feed-cont"></div>
 </div>
 
 <footer>Powered by M.A.GOHAR</footer>
@@ -80,106 +80,87 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
-    let me = null;
 
-    // Fix: Refresh Loop Control
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            me = user;
-            // Load user data once, don't refresh every time
-            db.ref('users/' + user.uid).once('value', s => {
-                const data = s.val() || { name: user.displayName, pic: user.photoURL, uid: user.uid };
-                document.getElementById('my-profile-pic').src = data.pic;
-                if(!s.val()) db.ref('users/' + user.uid).set(data);
-            });
-            startApp();
-        } else {
-            // Only redirect if not already on the login process
-            if(!window.location.hash.includes("confirm")) {
+    // 1. PERSISTENCE FIX: Force browser to remember login
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                window.me = user;
+                document.getElementById('auth-overlay').style.display = 'none';
+                syncUser();
+                loadData();
+            } else {
                 auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
             }
-        }
+        });
     });
 
-    // --- DP CHANGE ---
-    window.updateProfilePic = (input) => {
-        if (input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const newPic = e.target.result;
-                db.ref('users/' + me.uid).update({ pic: newPic });
-                document.getElementById('my-profile-pic').src = newPic;
+    function syncUser() {
+        const uRef = db.ref('users/' + me.uid);
+        uRef.once('value', s => {
+            if(!s.val()) {
+                uRef.set({ name: me.displayName, pic: me.photoURL, uid: me.uid });
+            } else {
+                document.getElementById('header-dp').src = s.val().pic || me.photoURL;
+            }
+        });
+    }
+
+    // 2. DP & POST LOGIC
+    window.uploadDP = (input) => {
+        if(input.files[0]) {
+            const r = new FileReader();
+            r.onload = e => {
+                db.ref('users/' + me.uid).update({ pic: e.target.result });
+                document.getElementById('header-dp').src = e.target.result;
             };
-            reader.readAsDataURL(input.files[0]);
+            r.readAsDataURL(input.files[0]);
         }
     };
 
-    // --- POST WITH IMAGE & PREVIEW ---
-    window.previewImg = (input) => {
-        if (input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => document.getElementById('preview-box').innerHTML = `<img src="${e.target.result}">`;
-            reader.readAsDataURL(input.files[0]);
+    window.previewPost = (input) => {
+        if(input.files[0]) {
+            const r = new FileReader();
+            r.onload = e => document.getElementById('preview-area').innerHTML = `<img src="${e.target.result}">`;
+            r.readAsDataURL(input.files[0]);
         }
     };
 
-    window.sendPost = () => {
-        const txt = document.getElementById('postText').value;
-        const file = document.getElementById('postFile').files[0];
-        const priv = document.getElementById('postPriv').value;
+    window.submitPost = () => {
+        const txt = document.getElementById('postTxt').value;
+        const file = document.getElementById('postImg').files[0];
+        const dp = document.getElementById('header-dp').src;
 
-        const save = (img = "") => {
+        const pushPost = (img = "") => {
             db.ref('posts').push({
-                uid: me.uid, name: me.displayName, pic: document.getElementById('my-profile-pic').src,
-                text: txt, image: img, privacy: priv, gold: 0, silver: 0, time: Date.now()
+                uid: me.uid, name: me.displayName, pic: dp,
+                text: txt, image: img, time: Date.now()
             });
-            // Reset
-            document.getElementById('postText').value = "";
-            document.getElementById('preview-box').innerHTML = "";
-            document.getElementById('postFile').value = "";
+            document.getElementById('postTxt').value = "";
+            document.getElementById('preview-area').innerHTML = "";
+            document.getElementById('postImg').value = "";
         };
 
         if(file) {
-            const r = new FileReader(); r.readAsDataURL(file);
-            r.onload = () => save(r.result);
-        } else if(txt) save("");
+            const r = new FileReader(); r.onload = () => pushPost(r.result); r.readAsDataURL(file);
+        } else if(txt) pushPost();
     };
 
-    // --- UNDO REACTION LOGIC ---
-    window.react = (pid, type) => {
-        const rRef = db.ref(`reactions/${pid}/${me.uid}`);
-        rRef.once('value', s => {
-            const pRef = db.ref(`posts/${pid}/${type}`);
-            if (s.val() === type) {
-                pRef.transaction(c => Math.max(0, (c || 0) - 1));
-                rRef.remove();
-            } else {
-                pRef.transaction(c => (c || 0) + 1);
-                rRef.set(type);
-            }
-        });
-    };
-
-    function startApp() {
-        // Feed Listener
-        db.ref('posts').limitToLast(20).on('value', snap => {
-            const cont = document.getElementById('feed-items');
+    // 3. LOAD FEED (REALTIME)
+    function loadData() {
+        db.ref('posts').limitToLast(25).on('value', snap => {
+            const cont = document.getElementById('feed-cont');
             cont.innerHTML = "";
-            snap.forEach(child => {
-                const p = child.val();
-                const pid = child.key;
+            snap.forEach(c => {
+                const p = c.val();
                 cont.innerHTML = `
                 <div class="card">
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                        <img src="${p.pic}" style="width:35px; height:35px; border-radius:50%;">
+                        <img src="${p.pic}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
                         <b>${p.name}</b>
                     </div>
-                    <p>${p.text}</p>
-                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:10px;">` : ''}
-                    <div style="margin-top:10px; display:flex; gap:20px;">
-                        <button class="react-btn" onclick="react('${pid}', 'gold')">🟡 ${p.gold || 0}</button>
-                        <button class="react-btn" onclick="react('${pid}', 'silver')">⚪ ${p.silver || 0}</button>
-                    </div>
+                    <p style="margin:5px 0;">${p.text}</p>
+                    ${p.image ? `<img src="${p.image}" class="feed-img">` : ''}
                 </div>` + cont.innerHTML;
             });
         });
