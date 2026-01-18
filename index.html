@@ -1,59 +1,58 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Massfrendz | Powered by M.A.Gohar</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <title>Massfrendz Pro | Powered by M.A.Gohar</title>
     <style>
         :root { 
-            --neon-blue: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; 
-            --dark-bg: #0a0b10; --card-bg: #161b22; --text: #e6edf3;
+            --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --neon: #1877f2; 
+            --gold: #ffd700; --silver: #c0c0c0; --border: #ddd;
         }
-        body { background: var(--dark-bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
+        [data-theme="dark"] {
+            --bg: #0a0b10; --card: #161b22; --text: #e6edf3; --neon: #00f3ff; --border: #30363d;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; transition: 0.3s; }
 
-        /* Neon Navbar */
+        /* Navbar */
         .navbar { 
-            background: rgba(22, 27, 34, 0.9); padding: 0 20px; display: flex; justify-content: space-between; 
-            align-items: center; border-bottom: 2px solid var(--neon-blue); position: sticky; top: 0; z-index: 1000; height: 60px;
-            box-shadow: 0 0 15px var(--neon-blue);
+            background: var(--card); padding: 0 20px; display: flex; justify-content: space-between; 
+            align-items: center; border-bottom: 2px solid var(--neon); position: sticky; top: 0; z-index: 1000; height: 60px;
         }
         .m-logo { 
-            background: linear-gradient(45deg, var(--neon-blue), var(--neon-pink)); 
-            color: white; width: 45px; height: 45px; border-radius: 50%; display: flex; 
-            align-items: center; justify-content: center; font-size: 26px; font-weight: bold; 
-            text-shadow: 0 0 10px #fff; box-shadow: 0 0 15px var(--neon-pink);
+            background: var(--neon); color: white; width: 45px; height: 45px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; cursor: pointer;
         }
 
+        /* Layout */
         .app-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; padding: 20px; max-width: 1300px; margin: auto; }
-        .card { 
-            background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; 
-            border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; }
 
-        /* Neon Inputs */
-        input[type="text"] { 
-            background: #0d1117; border: 1px solid var(--neon-blue); color: white; 
-            padding: 10px 15px; border-radius: 20px; outline: none; width: 100%; box-sizing: border-box;
-        }
-        input[type="text"]:focus { box-shadow: 0 0 10px var(--neon-blue); }
+        /* Privacy Select */
+        .privacy-box { font-size: 12px; padding: 5px; border-radius: 5px; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
 
-        /* Chat Window Neon */
+        /* Reactions */
+        .react-bar { display: flex; gap: 15px; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+        .react-btn { border: none; background: none; cursor: pointer; font-size: 15px; color: var(--text); display: flex; align-items: center; gap: 5px; }
+        .gold { color: var(--gold); font-weight: bold; }
+        .silver { color: var(--silver); font-weight: bold; }
+
+        /* Chat Messages */
         #chat-popup { 
-            position: fixed; bottom: 0; right: 50px; width: 320px; height: 480px; 
-            background: var(--card-bg); display: none; flex-direction: column; 
-            border-radius: 15px 15px 0 0; border: 2px solid var(--neon-pink); box-shadow: 0 0 20px var(--neon-pink); z-index: 2000;
+            position: fixed; bottom: 0; right: 50px; width: 330px; height: 480px; 
+            background: var(--card); display: none; flex-direction: column; 
+            border-radius: 15px 15px 0 0; border: 2px solid var(--neon); z-index: 2000; box-shadow: 0 0 15px rgba(0,0,0,0.2);
         }
-        .msg-sent { background: var(--neon-blue); color: #000; align-self: flex-end; font-weight: 500; }
-        .msg-rcvd { background: #30363d; color: #fff; align-self: flex-start; }
-        .chat-msg { padding: 10px 14px; border-radius: 15px; max-width: 80%; margin: 5px 0; font-size: 14px; }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 8px 12px; border-radius: 15px; max-width: 75%; position: relative; font-size: 14px; }
+        .msg-sent { background: var(--neon); color: white; align-self: flex-end; }
+        .msg-rcvd { background: var(--border); color: var(--text); align-self: flex-start; }
+        
+        .msg-del-btn { font-size: 9px; cursor: pointer; display: block; margin-top: 4px; opacity: 0.7; }
 
-        /* Footer */
-        .footer-tag { text-align: center; padding: 10px; font-size: 12px; color: var(--neon-green); letter-spacing: 1px; }
-
-        .online-dot { width: 12px; height: 12px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 8px var(--neon-green); }
-        .block-btn { color: var(--neon-pink); cursor: pointer; border: 1px solid var(--neon-pink); padding: 3px 8px; border-radius: 5px; font-size: 11px; }
-        .btn-post { background: var(--neon-blue); border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; }
+        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
+        .btn { background: var(--neon); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .footer-tag { text-align: center; padding: 20px; font-weight: bold; color: var(--neon); font-size: 14px; }
     </style>
 </head>
 <body>
@@ -62,26 +61,36 @@
 
     <nav class="navbar">
         <div style="display:flex; align-items:center; gap:12px;">
-            <div class="m-logo">M</div>
-            <input type="text" placeholder="Search friends..." style="width:200px;" onkeyup="searchGlobal(this.value)">
+            <div class="m-logo" onclick="location.reload()">M</div>
+            <input type="text" id="searchUser" placeholder="Search friends..." style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px 15px; border-radius:20px;" onkeyup="searchGlobal(this.value)">
         </div>
-        <div id="me-info" style="display:flex; align-items:center; gap:10px;"></div>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <button onclick="toggleTheme()" class="btn" style="font-size: 12px;">🌗 Mode</button>
+            <div id="me-info"></div>
+        </div>
     </nav>
 
     <div class="app-layout">
         <div class="sidebar">
             <div class="card">
-                <h3 style="color:var(--neon-blue)">Inbox</h3>
+                <h3>Inbox</h3>
                 <div id="user-list"></div>
             </div>
         </div>
 
         <div class="feed">
             <div class="card">
-                <input type="text" id="postText" placeholder="What's on your neon mind?">
+                <input type="text" id="postText" placeholder="What's on your mind, Gohar?" style="width:100%; padding:12px; border-radius:20px; border:1px solid var(--border); background:var(--bg); color:var(--text); outline:none;">
                 <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <label style="color:var(--neon-green); cursor:pointer">🖼️ Photo Only <input type="file" id="postFile" accept="image/*" hidden></label>
-                    <button onclick="publishPost()" class="btn-post">Post to Feed</button>
+                    <div style="display:flex; gap:10px;">
+                        <label style="cursor:pointer; font-size:18px;">🖼️<input type="file" id="postFile" accept="image/*" hidden></label>
+                        <select id="postPrivacy" class="privacy-box">
+                            <option value="public">🌍 Public</option>
+                            <option value="friends">👥 Friends</option>
+                            <option value="private">🔒 Only Me</option>
+                        </select>
+                    </div>
+                    <button onclick="publishPost()" class="btn">Post</button>
                 </div>
             </div>
             <div id="feed-container"></div>
@@ -90,28 +99,22 @@
 
         <div class="sidebar">
             <div class="card">
-                <h3 style="color:var(--neon-pink)">Neon Settings</h3>
-                <p style="font-size:12px">Feed: Images Only<br>Chat: Audio/Video/Images Allowed</p>
-                <div id="blocked-status" style="color:var(--neon-pink); font-size:11px;"></div>
+                <h3>Privacy Settings</h3>
+                <div id="blocked-ui">No blocked users.</div>
             </div>
         </div>
     </div>
 
     <div id="chat-popup">
-        <div style="background:var(--neon-pink); color:white; padding:12px; display:flex; justify-content:space-between;">
-            <span id="chat-name">Secure Chat</span>
+        <div style="background:var(--neon); color:white; padding:12px; display:flex; justify-content:space-between; border-radius:15px 15px 0 0;">
+            <span id="chat-name">Chat</span>
             <span onclick="closeChat()" style="cursor:pointer">✖</span>
         </div>
-        <div id="chat-messages" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column;"></div>
-        <div style="padding:10px; border-top:1px solid #333;">
-            <div style="display:flex; gap:10px; margin-bottom:8px;">
-                <label title="Send Media" style="cursor:pointer">📎<input type="file" accept="image/*,audio/*,video/*" hidden onchange="sendChatMedia(this.files[0])"></label>
-                <span onclick="addEmoji('🔥')" style="cursor:pointer">🔥</span>
-                <span onclick="addEmoji('😂')" style="cursor:pointer">😂</span>
-            </div>
+        <div id="chat-messages"></div>
+        <div style="padding:10px; border-top:1px solid var(--border);">
             <div style="display:flex; gap:5px;">
-                <input type="text" id="chatInput" placeholder="Aa">
-                <button onclick="sendPrivateMsg()" style="background:none; border:none; font-size:22px; cursor:pointer">🚀</button>
+                <input type="text" id="chatInput" placeholder="Write a message..." style="flex:1; padding:8px; border-radius:15px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+                <button onclick="sendPrivateMsg()" style="background:none; border:none; font-size:20px; cursor:pointer;">🚀</button>
             </div>
         </div>
     </div>
@@ -119,102 +122,44 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, set, serverTimestamp, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, serverTimestamp, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        const firebaseConfig = { /* Aapka API Key yahan aayega */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA",
+            authDomain: "massfrendz.firebaseapp.com",
+            databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/",
+            projectId: "massfrendz",
+        };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
-        
         let currentChatUser = null;
-        let myBlockedList = [];
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                const userRef = ref(db, 'users/' + user.uid);
-                set(userRef, { name: user.displayName, pic: user.photoURL, online: true });
-                onDisconnect(userRef).update({ online: false });
-                document.getElementById('me-info').innerHTML = `<img src="${user.photoURL}" style="width:35px; border-radius:50%; border:2px solid var(--neon-blue)">`;
+                set(ref(db, 'users/' + user.uid), { name: user.displayName, pic: user.photoURL });
+                document.getElementById('me-info').innerHTML = `<img src="${user.photoURL}" style="width:35px; border-radius:50%;">`;
                 loadFeed();
                 loadUsers();
-                loadBlocks();
-            } else { signInWithRedirect(auth, new GoogleAuthProvider()); }
+            } else {
+                signInWithRedirect(auth, new GoogleAuthProvider());
+            }
         });
 
-        // --- BLOCK SYSTEM FIX ---
-        window.toggleBlock = (uid) => {
-            const idx = myBlockedList.indexOf(uid);
-            if(idx === -1) myBlockedList.push(uid);
-            else myBlockedList.splice(idx, 1);
-            set(ref(db, 'blocks/' + auth.currentUser.uid), myBlockedList);
-        };
-
-        function loadBlocks() {
-            onValue(ref(db, 'blocks/' + auth.currentUser.uid), (s) => {
-                myBlockedList = s.val() || [];
-                document.getElementById('blocked-status').innerText = "Blocked: " + myBlockedList.length;
-            });
-        }
-
-        // --- CHAT WITH MEDIA & BLOCK CHECK ---
-        window.sendPrivateMsg = () => {
-            const txt = document.getElementById('chatInput').value;
-            if(!txt || !currentChatUser) return;
-            
-            // Block Check: Agar aapne use block kiya hai ya usne aapko, toh msg nahi jayega
-            if(myBlockedList.includes(currentChatUser)) return alert("Unblock to send message!");
-
-            const chatID = [auth.currentUser.uid, currentChatUser].sort().join("_");
-            push(ref(db, 'chats/' + chatID), { sender: auth.currentUser.uid, text: txt, time: serverTimestamp() });
-            document.getElementById('chatInput').value = "";
-        };
-
-        window.sendChatMedia = (file) => {
-            if(myBlockedList.includes(currentChatUser)) return alert("User is blocked!");
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => {
-                const type = file.type.split('/')[0]; // image, video, or audio
-                const chatID = [auth.currentUser.uid, currentChatUser].sort().join("_");
-                push(ref(db, 'chats/' + chatID), { sender: auth.currentUser.uid, media: reader.result, mediaType: type, time: serverTimestamp() });
-            };
-        };
-
-        window.openChat = (uid, name) => {
-            currentChatUser = uid;
-            document.getElementById('chat-name').innerText = name;
-            document.getElementById('chat-popup').style.display = 'flex';
-            const chatID = [auth.currentUser.uid, uid].sort().join("_");
-            
-            onValue(ref(db, 'chats/' + chatID), (snap) => {
-                const msgDiv = document.getElementById('chat-messages');
-                msgDiv.innerHTML = "";
-                snap.forEach(m => {
-                    const d = m.val();
-                    const cls = d.sender === auth.currentUser.uid ? 'msg-sent' : 'msg-rcvd';
-                    let content = d.text || "";
-                    if(d.media) {
-                        if(d.mediaType === 'image') content = `<img src="${d.media}" style="width:100%; border-radius:10px;">`;
-                        else if(d.mediaType === 'video') content = `<video src="${d.media}" controls style="width:100%;"></video>`;
-                        else if(d.mediaType === 'audio') content = `<audio src="${d.media}" controls style="width:100%;"></audio>`;
-                    }
-                    msgDiv.innerHTML += `<div class="chat-msg ${cls}">${content}</div>`;
-                });
-                msgDiv.scrollTop = msgDiv.scrollHeight;
-                if(snap.exists() && Object.values(snap.val()).pop().sender !== auth.currentUser.uid) {
-                    document.getElementById('beepSound').play();
-                }
-            });
-        };
-
-        // --- FEED (ONLY IMAGES) ---
+        // --- POST WITH PRIVACY ---
         window.publishPost = () => {
-            const text = document.getElementById('postText').value;
+            const txt = document.getElementById('postText').value;
+            const priv = document.getElementById('postPrivacy').value;
             const file = document.getElementById('postFile').files[0];
-            if(file && !file.type.startsWith('image/')) return alert("Feed supports images only!");
-            
+            if(!txt && !file) return;
+
             const save = (img = "") => {
-                push(ref(db, 'posts'), { uid: auth.currentUser.uid, name: auth.currentUser.displayName, pic: auth.currentUser.photoURL, text: text, image: img, timestamp: serverTimestamp() });
+                push(ref(db, 'posts'), {
+                    uid: auth.currentUser.uid, name: auth.currentUser.displayName,
+                    pic: auth.currentUser.photoURL, text: txt, image: img,
+                    privacy: priv, gold: 0, silver: 0, time: serverTimestamp()
+                });
                 document.getElementById('postText').value = "";
             };
             if(file) { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => save(r.result); } else save();
@@ -226,40 +171,104 @@
                 cont.innerHTML = "";
                 snap.forEach(c => {
                     const p = c.val();
-                    if(!myBlockedList.includes(p.uid)) {
-                        cont.innerHTML = `<div class="card">
-                            <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-                                <img src="${p.pic}" style="width:35px; border-radius:50%; border:1px solid var(--neon-blue)">
-                                <b>${p.name}</b>
+                    const pid = c.key;
+                    // Privacy logic
+                    if(p.privacy === 'public' || p.uid === auth.currentUser.uid) {
+                        cont.innerHTML = `
+                        <div class="card">
+                            <div style="display:flex; justify-content:space-between;">
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <img src="${p.pic}" style="width:35px; border-radius:50%;">
+                                    <b>${p.name} <small style="font-weight:normal; opacity:0.6;">${p.privacy === 'public' ? '🌍' : '🔒'}</small></b>
+                                </div>
+                                ${p.uid === auth.currentUser.uid ? `<button onclick="deleteObj('posts/${pid}')" style="background:none; border:none; cursor:pointer;">🗑️</button>` : ''}
                             </div>
                             <p>${p.text}</p>
-                            ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:10px;">` : ''}
+                            ${p.image ? `<img src="${p.image}" class="post-img">` : ''}
+                            <div class="react-bar">
+                                <button onclick="react('${pid}', 'gold')" class="react-btn gold">🥇 ${p.gold || 0}</button>
+                                <button onclick="react('${pid}', 'silver')" class="react-btn silver">🥈 ${p.silver || 0}</button>
+                            </div>
                         </div>` + cont.innerHTML;
                     }
                 });
             });
         }
 
+        // --- CHAT WITH DELETE FOR ME/EVERYONE ---
+        window.openChat = (uid, name) => {
+            currentChatUser = uid;
+            document.getElementById('chat-name').innerText = name;
+            document.getElementById('chat-popup').style.display = 'flex';
+            const chatID = [auth.currentUser.uid, uid].sort().join("_");
+            
+            onValue(ref(db, 'chats/' + chatID), (snap) => {
+                const msgDiv = document.getElementById('chat-messages');
+                msgDiv.innerHTML = "";
+                snap.forEach(m => {
+                    const d = m.val();
+                    const mid = m.key;
+                    // Delete for Me check
+                    if(d.hideFor && d.hideFor.includes(auth.currentUser.uid)) return;
+
+                    const isMe = d.sender === auth.currentUser.uid;
+                    msgDiv.innerHTML += `
+                        <div class="msg ${isMe ? 'msg-sent' : 'msg-rcvd'}">
+                            ${d.text}
+                            <div style="display:flex; gap:8px;">
+                                <span class="msg-del-btn" onclick="delMsg('${chatID}', '${mid}', 'me')">Del for me</span>
+                                ${isMe ? `<span class="msg-del-btn" onclick="delMsg('${chatID}', '${mid}', 'everyone')">Del for everyone</span>` : ''}
+                            </div>
+                        </div>`;
+                });
+                msgDiv.scrollTop = msgDiv.scrollHeight;
+            });
+        };
+
+        window.delMsg = (chatID, mid, type) => {
+            if(type === 'everyone') {
+                remove(ref(db, `chats/${chatID}/${mid}`));
+            } else {
+                const path = `chats/${chatID}/${mid}/hideFor`;
+                onValue(ref(db, path), (s) => {
+                    let list = s.val() || [];
+                    if(!list.includes(auth.currentUser.uid)) list.push(auth.currentUser.uid);
+                    set(ref(db, path), list);
+                }, { onlyOnce: true });
+            }
+        };
+
+        window.sendPrivateMsg = () => {
+            const txt = document.getElementById('chatInput').value;
+            if(!txt || !currentChatUser) return;
+            const chatID = [auth.currentUser.uid, currentChatUser].sort().join("_");
+            push(ref(db, 'chats/' + chatID), { sender: auth.currentUser.uid, text: txt, time: serverTimestamp() });
+            document.getElementById('chatInput').value = "";
+        };
+
+        // --- EXTRAS ---
+        window.react = (pid, type) => {
+            const r = ref(db, `posts/${pid}/${type}`);
+            onValue(r, (s) => { update(ref(db, `posts/${pid}`), { [type]: (s.val() || 0) + 1 }); }, { onlyOnce: true });
+        };
+        window.deleteObj = (path) => { if(confirm("Are you sure?")) remove(ref(db, path)); };
+        window.toggleTheme = () => { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
+        window.closeChat = () => document.getElementById('chat-popup').style.display = 'none';
+        
         function loadUsers() {
             onValue(ref(db, 'users'), (snap) => {
                 const list = document.getElementById('user-list');
                 list.innerHTML = "";
                 snap.forEach(u => {
                     if(u.key !== auth.currentUser.uid) {
-                        const d = u.val();
-                        list.innerHTML += `<div class="user-row" style="display:flex; align-items:center; gap:10px; padding:10px; cursor:pointer;">
-                            <img src="${d.pic}" style="width:35px; border-radius:50%;" onclick="openChat('${u.key}', '${d.name}')">
-                            <span onclick="openChat('${u.key}', '${d.name}')">${d.name}</span>
-                            ${d.online ? '<div class="online-dot"></div>' : ''}
-                            <span class="block-btn" onclick="toggleBlock('${u.key}')">Block</span>
+                        list.innerHTML += `<div style="display:flex; align-items:center; gap:10px; padding:10px; cursor:pointer;" onclick="openChat('${u.key}', '${u.val().name}')">
+                            <img src="${u.val().pic}" style="width:30px; border-radius:50%;">
+                            <span>${u.val().name}</span>
                         </div>`;
                     }
                 });
             });
         }
-
-        window.closeChat = () => document.getElementById('chat-popup').style.display = 'none';
-        window.addEmoji = (e) => document.getElementById('chatInput').value += e;
     </script>
 </body>
 </html>
