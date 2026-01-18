@@ -3,155 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Massfrendz | Secure Social</title>
+    <title>Massfrendz Pro | Secure Social</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
-        :root { --fb-blue: #0084ff; --dark-bg: #18191a; --card-bg: #242526; --hover-bg: #3a3b3c; }
-        body { background: var(--dark-bg); color: #e4e6eb; font-family: 'Segoe UI', Tahoma, Helvetica, Arial, sans-serif; margin: 0; overflow-x: hidden; }
+        :root { --fb-blue: #1877f2; --bg: #f0f2f5; --white: #ffffff; --border: #dddfe2; }
+        body { background: var(--bg); color: #1c1e21; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; margin: 0; }
         
-        /* Layout */
-        .navbar { background: var(--card-bg); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #3e4042; }
-        .app-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; padding: 20px; max-width: 1400px; margin: auto; }
+        /* FB Header */
+        .navbar { background: var(--white); padding: 5px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; height: 56px; }
+        .nav-logo { color: var(--fb-blue); font-size: 24px; font-weight: bold; text-decoration: none; }
+        
+        .app-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 32px; padding: 20px; max-width: 1200px; margin: auto; }
+        
+        /* Post Cards */
+        .card { background: var(--white); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border: 1px solid var(--border); position: relative; }
+        
+        .post-input { width: 100%; border: none; background: #f0f2f5; padding: 12px; border-radius: 20px; font-size: 15px; outline: none; box-sizing: border-box; }
+        
+        .btn-post { background: var(--fb-blue); color: white; border: none; width: 100%; padding: 8px; border-radius: 6px; font-weight: 600; margin-top: 10px; cursor: pointer; }
+        
+        /* Messenger Popup */
+        #chat-popup { position: fixed; bottom: 0; right: 80px; width: 320px; height: 400px; background: white; display: none; flex-direction: column; border-radius: 8px 8px 0 0; box-shadow: 0 12px 28px rgba(0,0,0,0.2); z-index: 2000; border: 1px solid var(--border); }
+        .chat-header { background: var(--white); border-bottom: 1px solid var(--border); padding: 10px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: #fff; display: flex; flex-direction: column; }
+        
+        .del-btn { position: absolute; top: 12px; right: 12px; color: #65676b; cursor: pointer; border: none; background: none; font-size: 18px; }
+        .del-btn:hover { color: red; }
 
-        /* Common Styles */
-        .card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        .btn { background: var(--fb-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
-        .btn:hover { background: #0073e6; }
-        input { background: #3a3b3c; border: none; padding: 12px; border-radius: 20px; color: white; width: 100%; box-sizing: border-box; outline: none; }
-        
-        /* Profile & Posts */
-        .post { border-bottom: 1px solid #3e4042; padding: 15px 0; }
-        .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-        
-        /* Login Page */
-        .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-
-        @media (max-width: 900px) { .app-layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+        .profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #ddd; }
+        .user-row { display: flex; align-items: center; gap: 12px; padding: 8px; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        .user-row:hover { background: rgba(0,0,0,0.05); }
+        .post-img { width: 100%; border-radius: 8px; margin-top: 10px; max-height: 400px; object-fit: cover; }
     </style>
 </head>
 <body>
 
-    <div id="login-page" class="login-container">
-        <h1 style="color: var(--fb-blue); font-size: 3rem;">Massfrendz</h1>
-        <p>Connect securely with friends.</p>
-        <button class="btn" style="width: auto; padding: 15px 40px;" onclick="googleLogin()">Login with Google</button>
+    <nav class="navbar">
+        <a href="#" class="nav-logo">massfrendz</a>
+        <div id="me-top" style="display:flex; align-items:center; gap:8px; font-weight:600;"></div>
+    </nav>
+
+    <div class="app-layout">
+        <div class="sidebar">
+            <div class="card" style="padding: 8px;">
+                <h3 style="margin-left:8px;">Chats</h3>
+                <div id="user-list">Loading...</div>
+            </div>
+        </div>
+
+        <div class="feed">
+            <div class="card">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+                    <div id="me-pic"></div>
+                    <input type="text" id="postText" class="post-input" placeholder="What's on your mind?">
+                </div>
+                <div style="border-top: 1px solid #eee; padding-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <label style="cursor:pointer; color:#45bd62; font-weight:600;">🖼️ Photo <input type="file" id="postFile" hidden onchange="previewImg()"></label>
+                    <button onclick="publishPost()" class="btn-post" style="width:100px; margin:0;">Post</button>
+                </div>
+                <img id="postPreview" style="width:100%; margin-top:10px; border-radius:8px; display:none;">
+            </div>
+            <div id="feed-container"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="card">
+                <h3>Notifications</h3>
+                <p style="color:#65676b; font-size:14px;">No new alerts.</p>
+            </div>
+        </div>
     </div>
 
-    <div id="app-dashboard" style="display:none;">
-        <nav class="navbar">
-            <h2 style="color: var(--fb-blue); margin: 0;">Massfrendz</h2>
-            <div id="current-user-display" style="display:flex; align-items:center; gap:10px;"></div>
-        </nav>
-
-        <div class="app-layout">
-            <div class="sidebar">
-                <div class="card">
-                    <h3>Inbox (Encrypted)</h3>
-                    <div id="user-list">Searching for friends...</div>
-                </div>
-            </div>
-
-            <div class="feed">
-                <div class="card">
-                    <input type="text" id="postInput" placeholder="What's on your mind?">
-                    <button class="btn" onclick="sendPost()" style="margin-top:10px;">Post to Feed</button>
-                </div>
-                <div id="feed-container"></div>
-            </div>
-
-            <div class="sidebar">
-                <div class="card">
-                    <h3>Privacy Status</h3>
-                    <p style="color: #2ecc71;">● End-to-End Encrypted</p>
-                    <p style="font-size: 0.8rem; color: #b0b3b8;">Your messages are converted into secure code using AES encryption.</p>
-                </div>
-            </div>
+    <div id="chat-popup">
+        <div class="chat-header">
+            <span id="chat-with-name">Chat</span>
+            <span onclick="closeChat()" style="cursor:pointer; font-size:20px;">×</span>
+        </div>
+        <div id="chat-messages"></div>
+        <div style="padding:10px; display:flex; gap:5px;">
+            <input type="text" id="chatInput" placeholder="Aa" class="post-input">
+            <button onclick="sendPrivateMsg()" style="background:none; border:none; font-size:20px; cursor:pointer;">🚀</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, push, onValue, remove, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Firebase Config (Aapki Config)
         const firebaseConfig = {
             apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA",
             authDomain: "massfrendz.firebaseapp.com",
+            databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/",
             projectId: "massfrendz",
-            databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
-        const provider = new GoogleAuthProvider();
+        let currentChatUser = null;
 
-        // 1. Google Login
-        window.googleLogin = () => signInWithRedirect(auth, provider);
-
-        // 2. Auth State (Check login)
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById('login-page').style.display = 'none';
-                document.getElementById('app-dashboard').style.display = 'block';
-                
-                // Show User Info in Header
-                document.getElementById('current-user-display').innerHTML = `
-                    <span>${user.displayName}</span>
-                    <img src="${user.photoURL}" class="profile-pic">
-                `;
-                
-                loadPosts();
+                document.getElementById('me-top').innerHTML = `<img src="${user.photoURL}" class="profile-pic"> <span>${user.displayName.split(' ')[0]}</span>`;
+                document.getElementById('me-pic').innerHTML = `<img src="${user.photoURL}" class="profile-pic">`;
+                set(ref(db, 'users/' + user.uid), { name: user.displayName, pic: user.photoURL });
+                loadFeed();
+                loadUsers();
+            } else {
+                signInWithRedirect(auth, new GoogleAuthProvider());
             }
         });
 
-        // 3. Encrypted Post Sending
-        window.sendPost = () => {
-            const msg = document.getElementById('postInput').value;
-            if(msg.trim() !== "") {
-                // ENCRYPTION: Message ko code mein badalna
-                const secretKey = "massfrendz_key_123"; 
-                const encryptedMsg = CryptoJS.AES.encrypt(msg, secretKey).toString();
+        // 1. Publish Post with Image Logic
+        window.publishPost = async () => {
+            const text = document.getElementById('postText').value;
+            const file = document.getElementById('postFile').files[0];
+            let imgData = "";
 
-                push(ref(db, 'posts'), {
-                    uid: auth.currentUser.uid,
-                    name: auth.currentUser.displayName,
-                    pic: auth.currentUser.photoURL,
-                    message: encryptedMsg, // Yahan ab "hello" ki jagah code jayega database mein
-                    timestamp: serverTimestamp()
-                });
-                document.getElementById('postInput').value = "";
+            if(file) {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    savePost(text, reader.result);
+                };
+            } else if(text.trim() !== "") {
+                savePost(text, "");
             }
         };
 
-        // 4. Load & Decrypt Posts
-        function loadPosts() {
-            onValue(ref(db, 'posts'), (snapshot) => {
+        function savePost(t, img) {
+            push(ref(db, 'posts'), {
+                uid: auth.currentUser.uid,
+                name: auth.currentUser.displayName,
+                pic: auth.currentUser.photoURL,
+                text: t,
+                image: img,
+                time: serverTimestamp()
+            });
+            document.getElementById('postText').value = "";
+            document.getElementById('postPreview').style.display = "none";
+        }
+
+        // 2. Load Feed & Delete
+        function loadFeed() {
+            onValue(ref(db, 'posts'), (snap) => {
                 const container = document.getElementById('feed-container');
                 container.innerHTML = "";
-                snapshot.forEach(item => {
-                    const data = item.val();
-                    
-                    // DECRYPTION: Code ko wapas asli message mein badalna
-                    const secretKey = "massfrendz_key_123";
-                    const bytes  = CryptoJS.AES.decrypt(data.message, secretKey);
-                    const originalText = bytes.toString(CryptoJS.enc.Utf8);
-
-                    const postHTML = `
-                        <div class="card post">
-                            <div class="post-header">
-                                <img src="${data.pic || 'https://via.placeholder.com/40'}" class="profile-pic">
-                                <div>
-                                    <div style="font-weight:bold;">${data.name}</div>
-                                    <div style="font-size:0.7rem; color:#b0b3b8;">Secure Message</div>
-                                </div>
+                snap.forEach(child => {
+                    const p = child.val();
+                    const isMe = p.uid === auth.currentUser.uid;
+                    container.innerHTML = `
+                        <div class="card">
+                            ${isMe ? `<button class="del-btn" onclick="deletePost('${child.key}')">···</button>` : ''}
+                            <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                                <img src="${p.pic}" class="profile-pic">
+                                <div><b>${p.name}</b><br><small style="color:gray;">Just now</small></div>
                             </div>
-                            <p style="margin:10px 0;">${originalText}</p>
+                            <p>${p.text}</p>
+                            ${p.image ? `<img src="${p.image}" class="post-img">` : ''}
                         </div>
-                    `;
-                    container.innerHTML = postHTML + container.innerHTML;
+                    ` + container.innerHTML;
+                });
+            });
+        }
+
+        window.deletePost = (id) => { if(confirm("Delete this post?")) remove(ref(db, 'posts/' + id)); };
+
+        // 3. Private Messaging
+        window.openChat = (uid, name) => {
+            currentChatUser = uid;
+            document.getElementById('chat-with-name').innerText = name;
+            document.getElementById('chat-popup').style.display = 'flex';
+        };
+        window.closeChat = () => document.getElementById('chat-popup').style.display = 'none';
+
+        function loadUsers() {
+            onValue(ref(db, 'users'), (snap) => {
+                const list = document.getElementById('user-list');
+                list.innerHTML = "";
+                snap.forEach(child => {
+                    if(child.key !== auth.currentUser.uid) {
+                        const u = child.val();
+                        list.innerHTML += `<div class="user-row" onclick="openChat('${child.key}', '${u.name}')">
+                            <img src="${u.pic}" class="profile-pic"> <span><b>${u.name}</b></span>
+                        </div>`;
+                    }
                 });
             });
         }
