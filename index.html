@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Massfrendz | Secure App</title>
+    <style>
+        body { background: #121212; color: white; font-family: 'Segoe UI', Arial; text-align: center; margin: 0; }
+        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .box { background: #1e1e1e; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; width: 350px; }
+        .btn { background: #0084ff; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn:hover { background: #0073e6; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; }
+        #app-dashboard { display: none; padding: 20px; }
+        .post { background: #1e1e1e; margin: 10px auto; padding: 15px; border-radius: 10px; width: 90%; max-width: 500px; text-align: left; border-left: 5px solid #0084ff; }
+    </style>
+</head>
+<body>
+
+    <div id="login-page" class="container">
+        <div class="box">
+            <h1 style="color:#0084ff; margin-bottom:10px;">Massfrendz</h1>
+            <p style="color:#888;">Safe & Secure Connection</p>
+            <button class="btn" onclick="googleLogin()">Login with Google</button>
+        </div>
+    </div>
+
+    <div id="app-dashboard">
+        <nav style="border-bottom: 1px solid #333; padding: 10px; margin-bottom: 20px;">
+            <h2>Massfrendz Feed</h2>
+        </nav>
+        
+        <div class="box" style="width: 90%; max-width: 500px; margin-bottom: 20px;">
+            <input type="text" id="postInput" placeholder="What is on your mind?">
+            <button class="btn" onclick="sendPost()">Post to Feed</button>
+        </div>
+
+        <div id="feed-container"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA",
+            authDomain: "massfrendz.firebaseapp.com",
+            projectId: "massfrendz",
+            databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const provider = new GoogleAuthProvider();
+
+        // 1. LOGIN FUNCTION
+        window.googleLogin = () => {
+            signInWithRedirect(auth, provider);
+        };
+
+        // 2. CHECK LOGIN STATUS
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('app-dashboard').style.display = 'block';
+                loadRealtimePosts();
+            }
+        });
+
+        // 3. SEND POST TO DATABASE
+        window.sendPost = () => {
+            const val = document.getElementById('postInput').value;
+            if(val.trim() !== "") {
+                push(ref(db, 'posts'), {
+                    name: auth.currentUser.displayName,
+                    message: val,
+                    timestamp: serverTimestamp()
+                });
+                document.getElementById('postInput').value = "";
+            }
+        };
+
+        // 4. LOAD POSTS IN REALTIME
+        function loadRealtimePosts() {
+            onValue(ref(db, 'posts'), (snapshot) => {
+                const container = document.getElementById('feed-container');
+                container.innerHTML = "";
+                snapshot.forEach(item => {
+                    const data = item.val();
+                    const postDiv = `
+                        <div class="post">
+                            <b>${data.name}</b>
+                            <p>${data.message}</p>
+                        </div>
+                    `;
+                    container.innerHTML = postDiv + container.innerHTML;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
