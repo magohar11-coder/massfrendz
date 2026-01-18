@@ -13,57 +13,46 @@
         :root { --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --neon: #1877f2; }
         [data-theme="dark"] { --bg: #0a0b10; --card: #161b22; --text: #e6edf3; --neon: #00f3ff; }
         
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; margin: 0; padding-top: 70px; padding-bottom: 70px; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 70px 0; }
 
-        /* Branding Headers & Footers (Strictly Fixed) */
         header { position: fixed; top: 0; width: 100%; height: 65px; background: var(--card); border-bottom: 3px solid var(--neon); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 2000; box-sizing: border-box; }
-        footer { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 3px solid var(--neon); padding: 12px 0; text-align: center; font-size: 22px; font-weight: 800; color: var(--neon); z-index: 2000; text-transform: uppercase; letter-spacing: 1px; }
+        footer { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 3px solid var(--neon); padding: 12px 0; text-align: center; font-size: 20px; font-weight: 800; color: var(--neon); z-index: 2000; }
 
-        .app-container { max-width: 600px; margin: auto; padding: 10px; }
-        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .app-container { max-width: 600px; margin: auto; padding: 10px; display: none; } /* Initially hidden */
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); }
 
-        /* Profile & Post Elements */
-        .user-dp { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--neon); }
-        .post-input { width: 100%; border: none; outline: none; background: transparent; color: inherit; font-size: 16px; min-height: 60px; resize: none; }
-        .btn-main { background: var(--neon); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .user-dp { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--neon); }
+        .logout-btn { background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; font-weight: bold; }
         
-        #preview-area img { width: 100%; border-radius: 10px; margin-top: 10px; }
-        .feed-img { width: 100%; border-radius: 10px; margin-top: 10px; display: block; }
-
-        /* Hidden Login Loader */
-        #auth-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index: 3000; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        #login-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .btn-login { background: var(--neon); color: white; border: none; padding: 15px 30px; border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="auth-overlay">Massfrendz Loading...</div>
+<div id="login-screen">
+    <h1 style="color:var(--neon); font-size: 40px;">MASSFRENDZ</h1>
+    <p>Please Login to Continue</p>
+    <button class="btn-login" onclick="login()">Login with Google</button>
+</div>
 
 <header>
     <div style="font-size: 24px; font-weight: 900; color: var(--neon);">MASSFRENDZ</div>
     <div style="display:flex; align-items:center; gap:10px;">
-        <label>
-            <img id="header-dp" class="user-dp" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-            <input type="file" id="dpFile" hidden onchange="uploadDP(this)">
-        </label>
+        <img id="header-dp" class="user-dp" src="">
+        <button class="logout-btn" onclick="logout()">LOGOUT</button>
     </div>
 </header>
 
-<div class="app-container">
-    <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">
-        <div style="min-width:60px; height:60px; border-radius:50%; border:2px dashed var(--neon); display:flex; align-items:center; justify-content:center; font-size:30px; cursor:pointer;" onclick="document.getElementById('statusFile').click()">+</div>
-        <input type="file" id="statusFile" hidden onchange="uploadStatus(this)">
-        <div id="status-row" style="display:flex; gap:10px;"></div>
-    </div>
-
+<div class="app-container" id="main-app">
     <div class="card">
-        <textarea id="postTxt" class="post-input" placeholder="What's on your mind?"></textarea>
+        <textarea id="postTxt" placeholder="What's on your mind, Gohar?" style="width:100%; border:none; outline:none; font-size:16px; min-height:60px;"></textarea>
         <div id="preview-area"></div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
             <label style="cursor:pointer; font-size:22px;">🖼️<input type="file" id="postImg" hidden onchange="previewPost(this)"></label>
-            <button onclick="submitPost()" class="btn-main">Post</button>
+            <button onclick="submitPost()" style="background:var(--neon); color:white; border:none; padding:8px 20px; border-radius:20px; font-weight:bold;">POST</button>
         </div>
     </div>
-
     <div id="feed-cont"></div>
 </div>
 
@@ -81,47 +70,42 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // 1. PERSISTENCE FIX: Force browser to remember login
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                window.me = user;
-                document.getElementById('auth-overlay').style.display = 'none';
-                syncUser();
-                loadData();
-            } else {
-                auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
-            }
-        });
+    // Force persistence to LOCAL
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            window.me = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('header-dp').src = user.photoURL;
+            loadFeed();
+        } else {
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('main-app').style.display = 'none';
+        }
     });
 
-    function syncUser() {
-        const uRef = db.ref('users/' + me.uid);
-        uRef.once('value', s => {
-            if(!s.val()) {
-                uRef.set({ name: me.displayName, pic: me.photoURL, uid: me.uid });
-            } else {
-                document.getElementById('header-dp').src = s.val().pic || me.photoURL;
-            }
+    function login() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(err => {
+            // Agar popup block ho jaye toh redirect karein
+            auth.signInWithRedirect(provider);
         });
     }
 
-    // 2. DP & POST LOGIC
-    window.uploadDP = (input) => {
-        if(input.files[0]) {
-            const r = new FileReader();
-            r.onload = e => {
-                db.ref('users/' + me.uid).update({ pic: e.target.result });
-                document.getElementById('header-dp').src = e.target.result;
-            };
-            r.readAsDataURL(input.files[0]);
+    function logout() {
+        if(confirm("Log Out karna chahte hain?")) {
+            auth.signOut().then(() => {
+                window.location.reload();
+            });
         }
-    };
+    }
 
     window.previewPost = (input) => {
         if(input.files[0]) {
             const r = new FileReader();
-            r.onload = e => document.getElementById('preview-area').innerHTML = `<img src="${e.target.result}">`;
+            r.onload = e => document.getElementById('preview-area').innerHTML = `<img src="${e.target.result}" style="width:100%; border-radius:10px; margin-top:10px;">`;
             r.readAsDataURL(input.files[0]);
         }
     };
@@ -129,26 +113,23 @@
     window.submitPost = () => {
         const txt = document.getElementById('postTxt').value;
         const file = document.getElementById('postImg').files[0];
-        const dp = document.getElementById('header-dp').src;
-
-        const pushPost = (img = "") => {
+        
+        const save = (img = "") => {
             db.ref('posts').push({
-                uid: me.uid, name: me.displayName, pic: dp,
+                uid: me.uid, name: me.displayName, pic: me.photoURL,
                 text: txt, image: img, time: Date.now()
             });
             document.getElementById('postTxt').value = "";
             document.getElementById('preview-area').innerHTML = "";
-            document.getElementById('postImg').value = "";
         };
 
         if(file) {
-            const r = new FileReader(); r.onload = () => pushPost(r.result); r.readAsDataURL(file);
-        } else if(txt) pushPost();
+            const r = new FileReader(); r.onload = () => save(r.result); r.readAsDataURL(file);
+        } else if(txt) save("");
     };
 
-    // 3. LOAD FEED (REALTIME)
-    function loadData() {
-        db.ref('posts').limitToLast(25).on('value', snap => {
+    function loadFeed() {
+        db.ref('posts').limitToLast(20).on('value', snap => {
             const cont = document.getElementById('feed-cont');
             cont.innerHTML = "";
             snap.forEach(c => {
@@ -156,11 +137,11 @@
                 cont.innerHTML = `
                 <div class="card">
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                        <img src="${p.pic}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
+                        <img src="${p.pic}" class="user-dp">
                         <b>${p.name}</b>
                     </div>
-                    <p style="margin:5px 0;">${p.text}</p>
-                    ${p.image ? `<img src="${p.image}" class="feed-img">` : ''}
+                    <p>${p.text}</p>
+                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:10px; margin-top:10px;">` : ''}
                 </div>` + cont.innerHTML;
             });
         });
