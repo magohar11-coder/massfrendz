@@ -1,99 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Massfrendz Ultra | M.A. Gohar</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
-    
-    <style>
-        :root { --main: #00c853; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --gray: #65676b; }
-        [data-theme="dark"] { --bg: #18191a; --card: #242526; --text: #e4e6eb; --gray: #b0b3b8; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-top: 60px; transition: 0.3s; }
-        
-        /* Navigation */
-        nav { position: fixed; top: 0; width: 100%; background: var(--card); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; height: 56px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000; box-sizing: border-box; }
-        .nav-center { display: flex; gap: 40px; }
-        .nav-center i { font-size: 24px; color: var(--gray); cursor: pointer; padding: 10px 20px; border-radius: 8px; }
-        .nav-center i.active { color: var(--main); border-bottom: 3px solid var(--main); border-radius: 0; }
-        
-        /* Layout */
-        .grid { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1250px; margin: auto; padding: 10px; }
-        .card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); position: relative; }
-        
-        /* Components */
-        .btn-main { background: var(--main); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .post-img { width: 100%; border-radius: 8px; margin-top: 10px; }
-        .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; float: right; }
-        
-        /* Chat Box */
-        #chat-box { position: fixed; bottom: 0; right: 20px; width: 330px; height: 420px; background: var(--card); box-shadow: 0 -5px 20px rgba(0,0,0,0.3); display: none; flex-direction: column; border-radius: 10px 10px 0 0; z-index: 2000; }
-        
-        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .side { display: none; } }
-    </style>
-</head>
-<body data-theme="light">
-
-<nav>
-    <div style="display:flex; align-items:center; gap:8px;">
-        <b style="color:var(--main); font-size:28px; cursor:pointer;" onclick="location.reload()">M</b>
-        <input type="text" id="searchInp" oninput="searchUsers(this.value)" placeholder="Search Massfrendz" style="background:var(--bg); border:none; padding:10px 15px; border-radius:20px; outline:none; width:180px; color:var(--text);">
-    </div>
-    <div class="nav-center">
-        <i class="fas fa-home active"></i>
-        <i class="fas fa-user-friends" onclick="showFriends()"></i>
-        <i class="fas fa-bell" onclick="showNotif()"></i>
-    </div>
-    <div style="display:flex; gap:12px; align-items:center;">
-        <i class="fas fa-moon" onclick="toggleTheme()" style="cursor:pointer; font-size:20px;"></i>
-        <img id="my-dp" onclick="openProfileSettings()" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--main); cursor:pointer; object-fit:cover;">
-    </div>
-</nav>
-
-<div class="grid">
-    <div class="side">
-        <div class="card" style="text-align:center;">
-            <div style="position:relative; display:inline-block;">
-                <img id="side-dp" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid var(--main);">
-                <label style="position:absolute; bottom:5px; right:5px; background:white; border-radius:50%; padding:5px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
-                    <i class="fas fa-camera" style="color:var(--main);"></i>
-                    <input type="file" hidden accept="image/*" onchange="updateProfilePic(this)">
-                </label>
-            </div>
-            <h3 id="side-name" style="margin:10px 0 5px 0;">Loading...</h3>
-            <button class="btn-main" style="width:100%; margin-top:10px;" onclick="editName()">Edit Profile</button>
+<div id="chat-window">
+    <div style="background:var(--main); color:white; padding:12px; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <img id="chat-user-img" style="width:30px; height:30px; border-radius:50%;">
+            <b id="chat-user-name">User</b>
         </div>
-        <div class="card">
-            <b>Reward Milestones</b><br><br>
-            <small>⚪ Silver: 0-50 Likes</small><br>
-            <small>🟡 Gold: 51-200 Likes</small><br>
-            <small>💎 Diamond: 200+ Likes</small>
+        <div style="display:flex; gap:15px;">
+            <i class="fas fa-phone" style="cursor:pointer;"></i>
+            <i class="fas fa-video" style="cursor:pointer;"></i>
+            <span onclick="closeChat()" style="cursor:pointer; font-size:20px;">&times;</span>
         </div>
     </div>
-
-    <div class="main-feed">
-        <div class="card">
-            <div style="display:flex; gap:10px; align-items:center;">
-                <img id="post-dp" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                <textarea id="pText" placeholder="What's on your mind, Gohar?" style="flex:1; border:none; background:#f0f2f5; padding:12px; border-radius:20px; outline:none; resize:none;"></textarea>
-            </div>
-            <div id="pre-box"></div>
-            <hr style="opacity:0.1; margin:15px 0;">
-            <div style="display:flex; justify-content:space-between;">
-                <label style="cursor:pointer; color:var(--gray); font-weight:bold;"><i class="fas fa-image" style="color:#45bd62;"></i> Photo <input type="file" hidden onchange="preV(this)"></label>
-                <button class="btn-main" onclick="createPost()">Post Now</button>
-            </div>
+    <div id="chat-msgs" style="flex:1; overflow-y:auto; padding:15px; background:#f9f9f9; display:flex; flex-direction:column; gap:10px;"></div>
+    <div id="typing-indicator" style="font-size:12px; color:gray; padding-left:15px; display:none;">Typing...</div>
+    <div style="padding:10px; border-top:1px solid #eee;">
+        <div style="display:flex; gap:8px; align-items:center;">
+            <i class="fas fa-plus-circle" style="color:var(--main); cursor:pointer;"></i>
+            <input type="text" id="msg-input" placeholder="Type..." style="flex:1; border:none; background:#f0f2f5; padding:10px; border-radius:20px; outline:none;">
+            <i class="fas fa-paper-plane" onclick="sendMsg()" style="color:var(--main); cursor:pointer; font-size:20px;"></i>
         </div>
-        <div id="post-list"></div>
-    </div>
-
-    <div class="side">
-        <div class="card">
-            <h4>Who's Online</h4>
-            <div id="online-list">Connecting...</div>
+        <div style="display:flex; justify-content:space-around; margin-top:10px; font-size:14px; color:var(--gray);">
+            <i class="fas fa-microphone" title="Send Audio"></i>
+            <i class="fas fa-eye" id="view-once-btn" onclick="toggleViewOnce()" title="One-time View" style="cursor:pointer;"></i>
         </div>
     </div>
 </div>
+<audio id="beep-sound" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
