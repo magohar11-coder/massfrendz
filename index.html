@@ -115,8 +115,12 @@
         <img id="side-dp" class="side-img" src="https://via.placeholder.com/36">
         <b id="side-name">Loading...</b>
     </div>
-    <div class="side-item"><i class="fas fa-user-friends" style="color: #1877f2; font-size: 24px;"></i> <b>Friends</b></div>
-    <div class="side-item"><i class="fas fa-history" style="color: #1877f2; font-size: 24px;"></i> <b>Memories</b></div>
+    <div class="side-item" onclick="showFriends()">
+        <i class="fas fa-user-friends" style="color: #1877f2; font-size: 24px;"></i> <b>Friends</b>
+    </div>
+    <div class="side-item" onclick="showMemories()">
+        <i class="fas fa-history" style="color: #1877f2; font-size: 24px;"></i> <b>Memories</b>
+    </div>
     <div class="side-item"><i class="fas fa-bookmark" style="color: #c33af3; font-size: 24px;"></i> <b>Saved</b></div>
     <hr style="opacity: 0.1;">
     <p style="color: gray; font-size: 13px;">Powered by M.A. Gohar</p>
@@ -335,18 +339,23 @@
             div.id = 'chat-window-' + chatID;
             div.className = 'chat-float';
             div.innerHTML = `
-                <div class="chat-header">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <img src="${img}" style="width:24px; height:24px; border-radius:50%;">
-                        <b>${name}</b>
-                    </div>
-                    <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span>
+            <div class="chat-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <img src="${img}" style="width:24px; height:24px; border-radius:50%;">
+                    <b style="font-size:14px;">${name}</b>
                 </div>
-                <div id="msgs-${chatID}" class="chat-msgs-area"></div>
-                <div class="chat-input-area">
-                    <input type="text" id="input-${chatID}" placeholder="Type a message..." onkeypress="checkEnter(event, '${chatID}')">
-                    <i class="fas fa-paper-plane" onclick="sendMessage('${chatID}')" style="color:var(--main); cursor:pointer;"></i>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <i class="fas fa-phone" onclick="alert('Calling...')"></i>
+                    <i class="fas fa-video" onclick="alert('Starting Video...')"></i>
+                    <span onclick="this.parentElement.parentElement.parentElement.remove()" style="cursor:pointer; font-size:20px;">&times;</span>
                 </div>
+            </div>
+            <div id="msgs-${chatID}" class="chat-msgs-area"></div>
+            <div class="chat-input-area">
+                <i class="fas fa-plus-circle" style="color:var(--main); cursor:pointer;"></i>
+                <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="checkEnter(event, '${chatID}')">
+                <i class="fas fa-paper-plane" onclick="sendMessage('${chatID}')" style="color:var(--main); cursor:pointer;"></i>
+            </div>`;
             `;
             document.body.appendChild(div);
         }
@@ -405,13 +414,45 @@
         });
     }
 
-    // 12. NOTIFICATION & BEEP SOUND
+   // 13. LIKE SYSTEM
+    window.likePost = (postID) => {
+        const ref = db.ref('posts/' + postID + '/likes/' + me.uid);
+        ref.once('value', s => {
+            if(s.exists()) ref.remove(); // Unlike
+            else ref.set(true); // Like
+        });
+    };
+
+    // 14. PROFILE PAGE & CHANGE LOGIC
+    window.openProfile = () => {
+        const action = confirm("Gohar bhai, Profile change karni hai ya apni posts dekhni hain?\n\nOK: Change Name/DP\nCancel: View My Posts");
+        if(action) {
+            const newName = prompt("Naya naam likhen:", me.displayName);
+            if(newName) {
+                me.updateProfile({ displayName: newName }).then(() => {
+                    db.ref('users/' + me.uid).update({ n: newName });
+                    location.reload();
+                });
+            }
+        } else {
+            // Filter feed to show only my posts
+            loadPosts(me.uid); 
+        }
+    };
+
+    // 15. NOTIFICATION & REAL BEEP
     function listenForNotifications() {
-        db.ref('notif').limitToLast(1).on('child_added', s => {
+        db.ref('notif').on('child_added', s => {
             const n = s.val();
-            if(n.from !== me.displayName) {
-                document.getElementById('notif-count').innerText = "New";
-                document.getElementById('notif-sound').play(); // Beep bajegi
+            if(n.from !== me.displayName && (Date.now() - n.ts < 5000)) {
+                document.getElementById('notif-count').innerText = "!";
+                const beep = document.getElementById('notif-sound');
+                beep.play().catch(e => console.log("Sound play error"));
+                
+                // Browser Notification
+                if(Notification.permission === "granted") {
+                    new Notification("Massfrendz", { body: n.from + " " + n.msg });
+                }
             }
         });
     }
@@ -432,3 +473,4 @@
 </style>
 </body>
 </html>
+
