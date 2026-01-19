@@ -2,101 +2,76 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz | M.A. Gohar Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Massfrendz | Gohar Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <style>
         :root { --main: #00c853; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --gray: #65676b; }
         [data-theme="dark"] { --bg: #18191a; --card: #242526; --text: #e4e6eb; --gray: #b0b3b8; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-top: 60px; overflow-x: hidden; }
-
-        /* Nav & Layout */
-        nav { position: fixed; top: 0; width: 100%; background: var(--card); display: flex; align-items: center; padding: 0 15px; height: 56px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000; box-sizing: border-box; }
-        .nav-left { flex: 1; display: flex; align-items: center; gap: 10px; }
-        .search-box { background: var(--bg); border-radius: 20px; padding: 8px 15px; display: flex; align-items: center; width: 220px; }
-        .search-box input { border: none; background: none; outline: none; color: var(--text); width: 100%; }
-        .nav-right { display: flex; gap: 12px; }
-        .n-icon { width: 40px; height: 40px; background: #e4e6eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-size: 18px; }
-
-        .grid-container { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: auto; padding: 0 15px; }
-        @media (max-width: 1100px) { .grid-container { grid-template-columns: 1fr; } .sidebar, .right-bar { display: none; } }
-
-        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
-        
-        /* Chat Window Overlay */
-        #chat-win { position: fixed; bottom: 0; right: 20px; width: 320px; height: 400px; background: var(--card); border-radius: 10px 10px 0 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 3000; }
-        @media (max-width: 600px) { #chat-win { width: 100%; height: 100%; right: 0; border-radius: 0; } }
-        #msgs { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        .msg { padding: 8px 12px; border-radius: 15px; max-width: 80%; font-size: 14px; }
-        .msg.me { align-self: flex-end; background: var(--main); color: white; }
-        .msg.them { align-self: flex-start; background: var(--bg); }
-
-        .badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; color: white; font-weight: bold; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-top: 60px; }
+        nav { position: fixed; top: 0; width: 100%; background: var(--card); display: flex; align-items: center; padding: 0 15px; height: 56px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000; box-sizing: border-box; justify-content: space-between; }
+        .grid { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1200px; margin: auto; padding: 10px; }
+        .card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .btn-post { background: var(--main); color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #chat-box { position: fixed; bottom: 0; right: 20px; width: 300px; height: 350px; background: var(--card); box-shadow: 0 -2px 10px rgba(0,0,0,0.2); display: none; flex-direction: column; border-radius: 10px 10px 0 0; z-index: 2000; }
+        .online-dot { width: 10px; height: 10px; background: #31a24c; border-radius: 50%; display: inline-block; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .side { display: none; } }
     </style>
 </head>
 <body data-theme="light">
 
 <nav>
-    <div class="nav-left">
-        <div style="color:var(--main); font-weight:900; font-size:26px; cursor:pointer;" onclick="location.reload()">M</div>
-        <div class="search-box"><input type="text" placeholder="Search Massfrendz..." oninput="searchUsers(this.value)"></div>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <b style="color:var(--main); font-size:24px; cursor:pointer;" onclick="location.reload()">M</b>
+        <input type="text" id="searchInp" placeholder="Search friends..." oninput="searchUsers(this.value)" style="background:var(--bg); border:none; padding:8px 15px; border-radius:20px; outline:none; color:var(--text);">
     </div>
-    <div class="nav-right">
-        <button class="n-icon" onclick="location.reload()">🏠</button>
-        <button class="n-icon" onclick="showFriends()">👥</button>
-        <button class="n-icon" onclick="toggleTheme()">🌓</button>
-        <img id="user-dp" onclick="logout()" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--main); cursor:pointer;">
+    <div style="display:flex; gap:15px; align-items:center;">
+        <span onclick="toggleTheme()" style="cursor:pointer; font-size:20px;">🌓</span>
+        <img id="my-dp" onclick="logout()" style="width:35px; height:35px; border-radius:50%; cursor:pointer; border:2px solid var(--main);">
     </div>
 </nav>
 
-<div class="grid-container">
-    <div class="sidebar">
-        <div class="card" id="my-profile">
-            <img id="side-dp" style="width:50px; border-radius:50%;">
-            <h4 id="side-name" style="margin:10px 0 5px 0;">...</h4>
-            <p style="font-size:12px; color:var(--gray);">Verified Massfrendz User</p>
-        </div>
-        <div class="card" style="font-size: 14px; cursor: pointer;" onclick="showFriends()">🤝 My Friends List</div>
-    </div>
-
-    <div class="feed-area">
+<div class="grid">
+    <div class="side">
         <div class="card">
-            <div style="display:flex; gap:10px;">
-                <img id="post-dp" style="width:40px; height:40px; border-radius:50%;">
-                <textarea id="pInp" placeholder="What's on your mind, Gohar?" style="flex:1; border:none; background:var(--bg); border-radius:15px; padding:10px; outline:none; resize:none;"></textarea>
-            </div>
-            <div id="pre-box" style="display:none; margin:10px;"><img id="pPre" style="width:80px; border-radius:5px;"></div>
+            <img id="side-dp" style="width:50px; border-radius:50%;">
+            <h4 id="side-name">Loading...</h4>
+            <p style="font-size:12px; color:var(--gray);">Massfrendz Verified</p>
+        </div>
+    </div>
+    
+    <div class="main-feed">
+        <div class="card">
+            <textarea id="pText" placeholder="What's on your mind, Gohar?" style="width:100%; border:none; outline:none; font-size:16px; background:transparent; resize:none; color:var(--text);"></textarea>
+            <div id="pre-box"></div>
             <hr style="opacity:0.1">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <label style="cursor:pointer; font-weight:bold; color:var(--gray);">🖼️ Photo <input type="file" accept="image/*" hidden onchange="pre(this)"></label>
-                <button onclick="sendP()" style="background:var(--main); color:white; border:none; padding:7px 20px; border-radius:20px; font-weight:bold;">POST</button>
+                <label style="cursor:pointer; font-size:20px;">🖼️ <input type="file" accept="image/*" hidden onchange="preV(this)"></label>
+                <button class="btn-post" onclick="createPost()">Post Now</button>
             </div>
         </div>
-        <div id="feed"></div>
+        <div id="post-list"></div>
     </div>
 
-    <div class="right-bar">
+    <div class="side">
         <div class="card">
-            <h4 style="margin:0 0 10px 0;">Reward Levels</h4>
-            <p style="font-size:12px;">⚪ Silver (0-50) | 🟡 Gold (51-200) | 💎 Diamond (201+)</p>
-            <hr style="opacity:0.1">
-            <div id="online-friends">Loading friends...</div>
+            <h4>Online Friends</h4>
+            <div id="online-list">Connecting...</div>
         </div>
     </div>
 </div>
 
-<div id="chat-win">
-    <div style="padding:10px; background:var(--main); color:white; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0;">
-        <span id="c-name">Chat</span>
-        <button onclick="closeChat()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">×</button>
+<div id="chat-box">
+    <div style="background:var(--main); color:white; padding:10px; display:flex; justify-content:space-between; border-radius:10px 10px 0 0;">
+        <span id="chat-with">Chat</span>
+        <span onclick="closeChat()" style="cursor:pointer; font-weight:bold;">×</span>
     </div>
-    <div id="msgs"></div>
-    <div style="padding:10px; display:flex; gap:5px; border-top:1px solid #eee;">
-        <input type="text" id="mInp" placeholder="Type a message..." style="flex:1; border:none; background:var(--bg); padding:10px; border-radius:20px; outline:none;">
-        <button onclick="sendM()" style="border:none; background:none; font-size:20px; cursor:pointer;">🚀</button>
+    <div id="chat-msgs" style="flex:1; overflow-y:auto; padding:10px; background:var(--bg);"></div>
+    <div style="padding:10px; display:flex; gap:5px; background:var(--card);">
+        <input type="text" id="mInp" placeholder="Type..." style="flex:1; border:1px solid #ddd; padding:8px; border-radius:20px; outline:none;">
+        <button onclick="sendMsg()" style="border:none; background:none; font-size:20px; cursor:pointer;">🚀</button>
     </div>
 </div>
 
@@ -104,97 +79,118 @@
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
-    let me = null, activeRoom = null;
+    let me = null, chatID = null;
 
+    // --- AUTH & LOGIN ---
     auth.onAuthStateChanged(user => {
         if(user) {
             me = user;
-            document.getElementById('user-dp').src = user.photoURL;
+            document.getElementById('my-dp').src = user.photoURL;
             document.getElementById('side-dp').src = user.photoURL;
-            document.getElementById('post-dp').src = user.photoURL;
             document.getElementById('side-name').innerText = user.displayName;
-            db.ref('users/'+user.uid).update({n: user.displayName, p: user.photoURL, online: true});
-            loadFeed();
+            db.ref('users/'+user.uid).update({n: user.displayName, p: user.photoURL, last: Date.now(), online: true});
+            loadPosts();
             loadOnline();
         } else { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     });
 
-    function loadFeed() {
-        db.ref('posts').limitToLast(30).on('value', s => {
-            const f = document.getElementById('feed'); f.innerHTML = "";
+    // --- POST & IMAGE LOGIC ---
+    window.preV = (input) => {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('pre-box').innerHTML = `<img src="${e.target.result}" id="temp-img" style="width:100px; border-radius:10px; margin:10px;">`;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    };
+
+    window.createPost = () => {
+        const t = document.getElementById('pText').value;
+        const imgEl = document.getElementById('temp-img');
+        const imgData = imgEl ? imgEl.src : "";
+        if(t || imgData) {
+            db.ref('posts').push({ uid: me.uid, n: me.displayName, p: me.photoURL, t: t, img: imgData, likes: 0, ts: Date.now() });
+            document.getElementById('pText').value = "";
+            document.getElementById('pre-box').innerHTML = "";
+        }
+    };
+
+    function loadPosts() {
+        db.ref('posts').on('value', s => {
+            const list = document.getElementById('post-list'); list.innerHTML = "";
             s.forEach(x => {
                 const p = x.val();
-                let b = "⚪ SILVER", c = "#b4b4b4";
-                if(p.likes > 200) { b = "💎 DIAMOND"; c = "#00d2ff"; }
-                else if(p.likes > 50) { b = "🟡 GOLD"; c = "#ffd700"; }
+                let badge = p.likes > 200 ? "💎 DIAMOND" : (p.likes > 50 ? "🟡 GOLD" : "⚪ SILVER");
+                let bColor = p.likes > 200 ? "#00d2ff" : (p.likes > 50 ? "#ffd700" : "#b4b4b4");
                 
-                f.innerHTML = `<div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="openChat('${p.uid}','${p.n}')">
-                            <img src="${p.p}" style="width:40px; border-radius:50%;">
+                list.innerHTML = `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img src="${p.p}" style="width:35px; border-radius:50%;">
                             <b>${p.n}</b>
                         </div>
-                        <span class="badge" style="background:${c}">${b}</span>
+                        <span style="font-size:10px; background:${bColor}; color:white; padding:3px 8px; border-radius:10px; font-weight:bold;">${badge}</span>
                     </div>
-                    <p style="margin:15px 0;">${p.t}</p>
-                    ${p.i ? `<img src="${p.i}" class="post-img">` : ''}
-                    <hr style="opacity:0.05">
-                    <button onclick="like('${x.key}')" style="background:none; border:none; color:var(--main); font-weight:bold; cursor:pointer;">❤️ ${p.likes || 0} Likes</button>
-                </div>` + f.innerHTML;
+                    <p>${p.t}</p>
+                    ${p.img ? `<img src="${p.img}" style="width:100%; border-radius:8px; margin-bottom:10px;">` : ''}
+                    <hr style="opacity:0.1">
+                    <button onclick="likePost('${x.key}')" style="border:none; background:none; color:var(--main); cursor:pointer; font-weight:bold;">❤️ ${p.likes || 0} Likes</button>
+                    <button onclick="openChat('${p.uid}','${p.n}')" style="border:none; background:none; color:var(--gray); cursor:pointer; margin-left:15px;">💬 Message</button>
+                    ${p.uid === me.uid ? `<button onclick="delP('${x.key}','${p.uid}')" style="border:none; background:none; color:red; cursor:pointer; float:right;">🗑️</button>` : ''}
+                </div>` + list.innerHTML;
             });
         });
     }
 
+    // --- CHAT & ONLINE LOGIC ---
     window.openChat = (uid, name) => {
         if(uid === me.uid) return;
-        activeRoom = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
-        document.getElementById('c-name').innerText = name;
-        document.getElementById('chat-win').style.display = 'flex';
-        db.ref('chats/'+activeRoom).off();
-        db.ref('chats/'+activeRoom).on('value', s => {
-            const mBox = document.getElementById('msgs'); mBox.innerHTML = "";
-            s.forEach(x => {
-                const m = x.val();
-                mBox.innerHTML += `<div class="msg ${m.s===me.uid?'me':'them'}">${m.t}</div>`;
+        chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
+        document.getElementById('chat-with').innerText = name;
+        document.getElementById('chat-box').style.display = 'flex';
+        db.ref('msgs/'+chatID).off();
+        db.ref('msgs/'+chatID).on('value', s => {
+            const mBox = document.getElementById('chat-msgs'); mBox.innerHTML = "";
+            s.forEach(m => {
+                const data = m.val();
+                mBox.innerHTML += `<div style="text-align: ${data.s === me.uid ? 'right' : 'left'}; margin-bottom:8px;">
+                    <span style="background:${data.s === me.uid ? var(--main) : '#fff'}; color:${data.s === me.uid ? 'white' : 'black'}; padding:8px 12px; border-radius:15px; display:inline-block; box-shadow:0 1px 1px rgba(0,0,0,0.1); font-size:14px;">${data.t}</span>
+                </div>`;
             });
             mBox.scrollTop = mBox.scrollHeight;
         });
     };
 
-    window.sendM = () => {
+    window.sendMsg = () => {
         const t = document.getElementById('mInp').value;
-        if(t) db.ref('chats/'+activeRoom).push({s: me.uid, t: t, ts: Date.now()});
+        if(t && chatID) db.ref('msgs/'+chatID).push({s: me.uid, t: t, ts: Date.now()});
         document.getElementById('mInp').value = "";
     };
 
-    window.sendP = () => {
-        const t = document.getElementById('pInp').value, i = document.getElementById('pPre').src;
-        const hasImg = document.getElementById('pre-box').style.display === 'block';
-        if(t || hasImg) db.ref('posts').push({uid: me.uid, n: me.displayName, p: me.photoURL, t: t, i: hasImg?i:'', likes:0, ts: Date.now()});
-        document.getElementById('pInp').value = ""; document.getElementById('pre-box').style.display = 'none';
-    };
-
-    window.searchUsers = (v) => {
-        if(!v) { loadFeed(); return; }
-        db.ref('users').orderByChild('n').startAt(v).endAt(v+"\uf8ff").once('value', s => {
-            const f = document.getElementById('feed'); f.innerHTML = "<h4>Search Results</h4>";
-            s.forEach(u => f.innerHTML += `<div class="card" onclick="openChat('${u.key}','${u.val().n}')">👤 ${u.val().n}</div>`);
-        });
-    };
-
     function loadOnline() {
-        db.ref('users').limitToLast(10).on('value', s => {
-            const o = document.getElementById('online-friends'); o.innerHTML = "<b>Who's Online</b><br>";
-            s.forEach(u => { if(u.key !== me.uid) o.innerHTML += `<p style="cursor:pointer;" onclick="openChat('${u.key}','${u.val().n}')">🟢 ${u.val().n}</p>`; });
+        db.ref('users').on('value', s => {
+            const oList = document.getElementById('online-list'); oList.innerHTML = "";
+            s.forEach(u => {
+                if(u.key !== me.uid) oList.innerHTML += `<div style="cursor:pointer; padding:5px; border-radius:5px;" onclick="openChat('${u.key}','${u.val().n}')"><span class="online-dot"></span> ${u.val().n}</div>`;
+            });
         });
     }
 
-    window.pre = (input) => { if(input.files[0]) { const r = new FileReader(); r.onload=e=>{document.getElementById('pPre').src=e.target.result; document.getElementById('pre-box').style.display='block';}; r.readAsDataURL(input.files[0]); } };
-    window.toggleTheme = () => document.body.dataset.theme = document.body.dataset.theme === 'light' ? 'dark' : 'light';
-    window.closeChat = () => document.getElementById('chat-win').style.display = 'none';
-    window.like = (id) => db.ref('posts/'+id+'/likes').transaction(c => (c || 0) + 1);
+    // --- HELPERS ---
+    window.likePost = (id) => db.ref('posts/'+id+'/likes').transaction(c => (c || 0) + 1);
+    window.delP = (id, uid) => { if(uid === me.uid && confirm("Delete post?")) db.ref('posts/'+id).remove(); };
+    window.closeChat = () => document.getElementById('chat-box').style.display = 'none';
+    window.toggleTheme = () => document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
     window.logout = () => { if(confirm("Logout?")) auth.signOut().then(()=>location.reload()); };
-    window.showFriends = () => alert("Friends system is now live! Click any name to start chatting.");
+    window.searchUsers = (v) => {
+        if(!v) { loadPosts(); return; }
+        db.ref('users').orderByChild('n').startAt(v).endAt(v+"\uf8ff").once('value', s => {
+            const list = document.getElementById('post-list'); list.innerHTML = "<h4>Results:</h4>";
+            s.forEach(u => { if(u.key !== me.uid) list.innerHTML += `<div class="card" onclick="openChat('${u.key}','${u.val().n}')">👤 ${u.val().n}</div>`; });
+        });
+    };
 </script>
 </body>
 </html>
