@@ -356,10 +356,8 @@
                 <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="checkEnter(event, '${chatID}')">
                 <i class="fas fa-paper-plane" onclick="sendMessage('${chatID}')" style="color:var(--main); cursor:pointer;"></i>
             </div>`;
-            `;
             document.body.appendChild(div);
         }
-        
         // Messages load karna
         db.ref('msgs/' + chatID).on('value', s => {
             const msgBox = document.getElementById('msgs-' + chatID);
@@ -473,4 +471,5 @@
 </style>
 </body>
 </html>
+
 
