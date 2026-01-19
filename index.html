@@ -73,7 +73,6 @@
                 <i class="fas fa-image" style="font-size: 20px;"></i> Photo
                 <input type="file" id="file-input" hidden accept="image/*" onchange="previewPostImage(this)">
             </label>
-            <span></span>
         </div>
         <button class="btn-post" onclick="submitPost()">Post</button>
     </div>
@@ -105,167 +104,137 @@
         document.getElementById('post-avatar').src = dp; document.getElementById('side-name').innerText = me.displayName;
     }
 
-    // 1. SEARCH FRIENDS LOGIC (Global Database Search)
-    document.getElementById('global-search').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        db.ref('users').once('value', s => {
-            const list = document.getElementById('online-users-list');
-            list.innerHTML = "<b>Search Results</b>";
-            s.forEach(u => {
-                if(u.val().n.toLowerCase().includes(query) && u.key !== me.uid) {
-                    list.innerHTML += `<div class="side-item" style="justify-content: space-between;">
-                        <div style="display:flex; align-items:center; gap:10px;" onclick="openChat('${u.key}', '${u.val().n}', '${u.val().p}')">
-                            <img src="${u.val().p}" class="side-img"><b>${u.val().n}</b>
-                        </div>
-                        <i class="fas fa-user-plus" onclick="sendRequest('${u.key}')" style="color:var(--main); cursor:pointer;"></i>
-                    </div>`;
-                }
-            });
-        });
-    });
-
-    // 2. FRIEND REQUEST SYSTEM
-    window.sendRequest = (targetUid) => {
-        db.ref('requests/' + targetUid + '/' + me.uid).set({ n: me.displayName, p: me.photoURL, ts: Date.now() });
-        alert("Friend Request Sent!");
-    };
-    function listenForRequests() {
-        db.ref('requests/' + me.uid).on('value', s => { document.getElementById('notif-count').innerText = s.numChildren(); });
-    }
-
-    // 3. POST LOGIC
-    window.previewPostImage = (input) => {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => { selectedPostImg = e.target.result; document.getElementById('post-image-preview').src = selectedPostImg; document.getElementById('image-preview-container').style.display = 'block'; };
-            reader.readAsDataURL(input.files[0]);
-        }
-    };
-    window.removeSelectedImg = () => { selectedPostImg = ""; document.getElementById('image-preview-container').style.display = 'none'; };
-    window.submitPost = () => {
-        const text = document.getElementById('post-input').value;
-        if(text || selectedPostImg) {
-            db.ref('posts').push({ uid: me.uid, n: me.displayName, p: me.photoURL, t: text, img: selectedPostImg, ts: Date.now() });
-            document.getElementById('post-input').value = ""; removeSelectedImg();
-        }
-    };
-    function loadPosts() {
-        db.ref('posts').on('value', snapshot => {
-            const feed = document.getElementById('main-feed');
-            let allHTML = ""; let posts = [];
-            snapshot.forEach(child => { posts.push({id: child.key, ...child.val()}); });
-            posts.reverse().forEach(post => {
-                allHTML += `<div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <img src="${post.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                            <div><b>${post.n}</b><br><small style="color:gray;">${new Date(post.ts).toLocaleString()}</small></div>
-                        </div>
-                        ${post.uid === me.uid ? `<i class="fas fa-trash-alt" onclick="deletePost('${post.id}')" style="color:#ff4d4d; cursor:pointer;"></i>` : ''}
-                    </div>
-                    <div style="margin-top:12px;">${post.t}</div>
-                    ${post.img ? `<img src="${post.img}" class="post-img-content">` : ''}
-                    <hr style="opacity:0.1; margin:12px 0;"><div style="display:flex; justify-content:space-around; font-weight:bold; color:var(--text-light); cursor:pointer;">
-                        <div onclick="likePost('${post.id}')"><i class="${post.likes && post.likes[me.uid] ? 'fas' : 'far'} fa-thumbs-up" style="${post.likes && post.likes[me.uid] ? 'color:var(--main)' : ''}"></i> ${post.likes ? Object.keys(post.likes).length : 0} Like</div>
-                        <div onclick="openChat('${post.uid}', '${post.n}', '${post.p}')"><i class="far fa-comment"></i> Chat</div>
-                    </div>
-                </div>`;
-            });
-            feed.innerHTML = allHTML || "<p style='text-align:center;'>No posts yet</p>";
-        });
-    }
-    window.deletePost = (id) => { if(confirm("Delete post?")) db.ref('posts/' + id).remove(); };
-    window.likePost = (id) => {
-        const ref = db.ref('posts/' + id + '/likes/' + me.uid);
-        ref.once('value', s => { if(s.exists()) ref.remove(); else ref.set(true); });
-    };
-
-    // 4. CHAT SYSTEM (Audio/Video/Delete/Unsend)
+    // --- CHAT LOGIC ---
     window.openChat = (uid, name, img) => {
         if(uid === me.uid) return;
         const chatID = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
         if(document.getElementById('chat-window-' + chatID)) return;
-        const div = document.createElement('div'); div.id = 'chat-window-' + chatID; div.className = 'chat-float';
+        
+        const div = document.createElement('div');
+        div.id = 'chat-window-' + chatID;
+        div.className = 'chat-float';
         div.innerHTML = `
-    <div class="chat-header">
-        <div style="display:flex; align-items:center; gap:8px;">
-            <img src="${img}" style="width:24px; height:24px; border-radius:50%;">
-            <b style="font-size:14px;">${name}</b>
-        </div>
-        <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span>
-    </div>
-    <div id="msgs-${chatID}" class="chat-msgs-area"></div>
-    <div class="chat-input-area" style="display:flex; align-items:center; gap:5px; padding:5px;">
-        <input type="checkbox" id="view-once-${chatID}" title="View Once">
-        <label style="cursor:pointer; color:var(--main);">
-            <i class="fas fa-paperclip"></i>
-            <input type="file" hidden accept="image/*,video/*,audio/*" onchange="sendAdvancedMedia('${chatID}', this)">
-        </label>
-        <input type="text" id="input-${chatID}" style="flex:1;" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMessage('${chatID}')">
-    </div>`;
-    <div id="msgs-${chatID}" class="chat-msgs-area"></div>
-    <div class="chat-input-area">
-        <label title="One-time View" style="cursor:pointer; font-size: 18px;">
-            <input type="checkbox" id="view-once-${chatID}"> <i class="fas fa-eye"></i>
-        </label>
-        <label style="cursor:pointer; color:var(--main);"><i class="fas fa-paperclip"></i>
-            <input type="file" hidden accept="image/*,video/*,audio/*" onchange="sendAdvancedMedia('${chatID}', this)">
-        </label>
-        <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMessage('${chatID}')">
-    </div>`;
+            <div class="chat-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <img src="${img}" style="width:24px; height:24px; border-radius:50%;">
+                    <b style="font-size:14px;">${name}</b>
+                </div>
+                <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span>
+            </div>
+            <div id="msgs-${chatID}" class="chat-msgs-area"></div>
+            <div class="chat-input-area">
+                <input type="checkbox" id="view-once-${chatID}" title="One-time View"> <i class="fas fa-eye" style="font-size:12px; color:gray;"></i>
+                <label style="cursor:pointer; color:var(--main); margin: 0 5px;">
+                    <i class="fas fa-paperclip"></i>
+                    <input type="file" hidden accept="image/*,video/*,audio/*" onchange="sendAdvancedMedia('${chatID}', this)">
+                </label>
+                <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendTextMessage('${chatID}')">
+            </div>`;
         document.body.appendChild(div);
+
         db.ref('msgs/' + chatID).on('value', s => {
-            const box = document.getElementById('msgs-' + chatID); if(!box) return; box.innerHTML = "";
+            const box = document.getElementById('msgs-' + chatID); if(!box) return;
+            box.innerHTML = "";
             s.forEach(m => {
                 const d = m.val(); const isMe = d.s === me.uid;
                 const msgDiv = document.createElement('div');
-                msgDiv.style = `padding:8px 12px; border-radius:15px; margin:2px; background:${isMe?'var(--main)':'#e4e6e9'}; color:${isMe?'white':'black'}; align-self:${isMe?'flex-end':'flex-start'}; max-width:85%; font-size:14px; cursor:pointer;`;
-                
-                if(d.type === 'img') msgDiv.innerHTML = `<img src="${d.t}" style="width:100%; border-radius:10px;">`;
-                else if(d.type === 'video') msgDiv.innerHTML = `<video src="${d.t}" controls style="width:100%; border-radius:10px;"></video>`;
-                else if(d.type === 'audio') msgDiv.innerHTML = `<audio src="${d.t}" controls style="width:180px;"></audio>`;
-                else msgDiv.innerText = d.t;
+                msgDiv.style = `padding:8px 12px; border-radius:15px; margin:2px; background:${isMe?'var(--main)':'#e4e6e9'}; color:${isMe?'white':'black'}; align-self:${isMe?'flex-end':'flex-start'}; max-width:85%; font-size:14px; cursor:pointer; position:relative;`;
 
-                if(isMe) msgDiv.onclick = () => { if(confirm("Unsend message for everyone?")) db.ref('msgs/'+chatID+'/'+m.key).remove(); };
+                // One-time View & Media Display
+                if (d.once && d.viewed && !isMe) {
+                    msgDiv.innerHTML = "<i><i class='fas fa-eye-slash'></i> Media Viewed</i>";
+                } else {
+                    if(d.type === 'img') {
+                        msgDiv.innerHTML = `<img src="${d.t}" style="width:100%; border-radius:10px;">`;
+                        if(d.once && !isMe && !d.viewed) setTimeout(() => db.ref('msgs/'+chatID+'/'+m.key).update({viewed:true}), 5000);
+                    } else if(d.type === 'video') {
+                        msgDiv.innerHTML = `<video src="${d.t}" controls style="width:100%; border-radius:10px;"></video>`;
+                    } else if(d.type === 'audio') {
+                        msgDiv.innerHTML = `<audio src="${d.t}" controls style="width:180px;"></audio>`;
+                    } else {
+                        msgDiv.innerText = d.t;
+                    }
+                }
+
+                // Delete Options
+                msgDiv.onclick = () => {
+                    const choice = prompt("1. Delete for Me\n2. Delete for Everyone");
+                    if(choice === "1") msgDiv.remove();
+                    else if(choice === "2" && isMe) db.ref('msgs/'+chatID+'/'+m.key).remove();
+                    else if(choice === "2") alert("You can only unsend your own messages!");
+                };
+
                 box.appendChild(msgDiv);
             });
             box.scrollTop = box.scrollHeight;
         });
     };
 
-    window.sendMessage = (cID) => { const inp = document.getElementById('input-' + cID); if(inp.value) { db.ref('msgs/' + cID).push({ s: me.uid, t: inp.value, type:'text', ts: Date.now() }); inp.value = ""; } };
-    
-    window.sendMedia = (cID, input) => {
-        if (input.files && input.files[0]) {
-            const file = input.files[0]; const reader = new FileReader();
+    window.sendTextMessage = (cID) => {
+        const inp = document.getElementById('input-' + cID);
+        if(inp.value) {
+            db.ref('msgs/' + cID).push({ s: me.uid, t: inp.value, type: 'text', ts: Date.now() });
+            inp.value = "";
+        }
+    };
+
+    window.sendAdvancedMedia = (cID, input) => {
+        const file = input.files[0];
+        const isOnce = document.getElementById('view-once-' + cID).checked;
+        if (file) {
+            const reader = new FileReader();
             reader.onload = (e) => {
-                let type = 'img';
-                if(file.type.startsWith('video')) type = 'video';
-                if(file.type.startsWith('audio')) type = 'audio';
-                db.ref('msgs/' + cID).push({ s: me.uid, t: e.target.result, type: type, ts: Date.now() });
+                let type = file.type.startsWith('video') ? 'video' : (file.type.startsWith('audio') ? 'audio' : 'img');
+                db.ref('msgs/' + cID).push({ s: me.uid, t: e.target.result, type: type, once: isOnce, viewed: false, ts: Date.now() });
+                document.getElementById('view-once-' + cID).checked = false;
             };
             reader.readAsDataURL(file);
         }
     };
 
-    function loadOnlineUsers() {
-        db.ref('users').on('value', s => {
-            const list = document.getElementById('online-users-list'); list.innerHTML = "";
+    // --- SEARCH & POSTS ---
+    document.getElementById('global-search').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        db.ref('users').once('value', s => {
+            const list = document.getElementById('online-users-list'); list.innerHTML = "<b>Results</b>";
             s.forEach(u => {
-                if(u.key !== me.uid) {
-                    list.innerHTML += `<div class="side-item" style="justify-content: space-between;">
-                        <div style="display:flex; align-items:center; gap:10px;" onclick="openChat('${u.key}', '${u.val().n}', '${u.val().p}')">
-                            <img src="${u.val().p}" class="side-img"><b>${u.val().n}</b>
-                        </div>
-                        <i class="fas fa-user-plus" onclick="sendRequest('${u.key}')" style="color:var(--main); cursor:pointer;"></i>
-                    </div>`;
+                if(u.val().n.toLowerCase().includes(query) && u.key !== me.uid) {
+                    list.innerHTML += `<div class="side-item" onclick="openChat('${u.key}','${u.val().n}','${u.val().p}')"><img src="${u.val().p}" class="side-img"><b>${u.val().n}</b></div>`;
                 }
             });
         });
+    });
+
+    window.previewPostImage = (i) => { if(i.files[0]){ const r=new FileReader(); r.onload=(e)=>{selectedPostImg=e.target.result; document.getElementById('post-image-preview').src=e.target.result; document.getElementById('image-preview-container').style.display='block';}; r.readAsDataURL(i.files[0]); } };
+    window.removeSelectedImg = () => { selectedPostImg=""; document.getElementById('image-preview-container').style.display='none'; };
+    window.submitPost = () => { const t=document.getElementById('post-input').value; if(t||selectedPostImg){ db.ref('posts').push({uid:me.uid, n:me.displayName, p:me.photoURL, t:t, img:selectedPostImg, ts:Date.now()}); document.getElementById('post-input').value=""; removeSelectedImg(); } };
+    
+    function loadPosts() {
+        db.ref('posts').on('value', snapshot => {
+            const feed = document.getElementById('main-feed'); feed.innerHTML = "";
+            let posts = []; snapshot.forEach(c => posts.push({id:c.key, ...c.val()}));
+            posts.reverse().forEach(post => {
+                feed.innerHTML += `<div class="card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div style="display:flex; gap:10px;"><img src="${post.p}" style="width:40px;height:40px;border-radius:50%;"><b>${post.n}</b></div>
+                        ${post.uid===me.uid?`<i class="fas fa-trash" onclick="db.ref('posts/${post.id}').remove()"></i>`:''}
+                    </div>
+                    <p>${post.t}</p>${post.img?`<img src="${post.img}" class="post-img-content">`:''}
+                    <div style="display:flex; justify-content:space-around; margin-top:10px; cursor:pointer;" onclick="openChat('${post.uid}','${post.n}','${post.p}')"><i class="far fa-comment"></i> Chat</div>
+                </div>`;
+            });
+        });
     }
+
+    function loadOnlineUsers() {
+        db.ref('users').on('value', s => {
+            const list = document.getElementById('online-users-list'); list.innerHTML = "";
+            s.forEach(u => { if(u.key!==me.uid) list.innerHTML += `<div class="side-item" onclick="openChat('${u.key}','${u.val().n}','${u.val().p}')"><img src="${u.val().p}" class="side-img"><b>${u.val().n}</b></div>`; });
+        });
+    }
+
+    window.sendRequest = (t) => { db.ref('requests/'+t+'/'+me.uid).set({n:me.displayName, p:me.photoURL}); alert("Sent!"); };
+    function listenForRequests() { db.ref('requests/'+me.uid).on('value', s => document.getElementById('notif-count').innerText=s.numChildren()); }
 </script>
 </body>
 </html>
-
-
-
