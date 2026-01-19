@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz | Advanced Engine</title>
+    <title>Massfrendz | Gohar Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -12,66 +12,67 @@
         [data-theme="dark"] { --bg: #18191a; --card: #242526; --text: #e4e6eb; --gray: #b0b3b8; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-top: 60px; }
 
-        /* Navigation - Pro Design */
         nav { position: fixed; top: 0; width: 100%; background: var(--card); display: flex; align-items: center; padding: 0 15px; height: 56px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000; box-sizing: border-box; }
         .nav-left { flex: 1; display: flex; align-items: center; gap: 10px; }
-        .search-box { background: var(--bg); border-radius: 20px; padding: 8px 15px; display: flex; align-items: center; width: 200px; }
+        .search-box { background: var(--bg); border-radius: 20px; padding: 8px 15px; display: flex; align-items: center; width: 220px; }
         .search-box input { border: none; background: none; outline: none; color: var(--text); width: 100%; }
 
         .nav-right { display: flex; gap: 12px; align-items: center; }
         .n-icon { width: 40px; height: 40px; background: #e4e6eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; border: none; }
-        [data-theme="dark"] .n-icon { background: #3a3b3c; }
+        [data-theme="dark"] .n-icon { background: #3a3b3c; color: white; }
 
-        /* Sidebar & Main Layout */
         .grid-container { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: auto; padding: 0 15px; }
         @media (max-width: 1100px) { .grid-container { grid-template-columns: 1fr; } .sidebar, .right-bar { display: none; } }
 
         .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         .sidebar-item:hover { background: rgba(0,0,0,0.05); }
 
-        /* Reward Panel */
         .reward-card { background: var(--card); border-radius: 10px; padding: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .milestone { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; font-weight: bold; }
-        .m-dot { width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+        .m-dot { width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; }
 
-        .btn-post { background: var(--main); color: white; border: none; padding: 8px 25px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        #posts-container { margin-top: 20px; }
+        .post-card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .badge { font-size: 10px; padding: 3px 8px; border-radius: 12px; color: white; font-weight: 800; }
     </style>
 </head>
 <body data-theme="light">
 
 <nav>
     <div class="nav-left">
-        <div style="color:var(--main); font-weight:900; font-size:24px;">M</div>
-        <div class="search-box"><input type="text" placeholder="Search Massfrendz..."></div>
+        <div style="color:var(--main); font-weight:900; font-size:26px; cursor:pointer;" onclick="location.reload()">M</div>
+        <div class="search-box">
+            <input type="text" id="sInp" placeholder="Search friends..." oninput="searchUsers(this.value)">
+        </div>
     </div>
     <div class="nav-right">
-        <button class="n-icon" title="Home" onclick="location.reload()">🏠</button>
-        <button class="n-icon" title="Friends">👥</button>
-        <button class="n-icon" title="Messages" onclick="openMsg()">💬</button>
-        <button class="n-icon" title="Notifications">🔔</button>
+        <button class="n-icon" onclick="location.reload()">🏠</button>
+        <button class="n-icon" onclick="alert('Profile system in Part 3')">👥</button>
         <button class="n-icon" onclick="toggleTheme()">🌓</button>
-        <img id="user-dp" style="width:40px; height:40px; border-radius:50%; cursor:pointer; border:2px solid var(--main);">
+        <img id="user-dp" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--main); cursor:pointer;" onclick="logout()">
     </div>
 </nav>
 
 <div class="grid-container">
     <div class="sidebar">
-        <div class="sidebar-item"><img id="side-dp" style="width:36px; border-radius:50%;"> <b id="side-name">...</b></div>
-        <div class="sidebar-item">👥 <span>Fans (540)</span></div>
-        <div class="sidebar-item">🔖 <span>Saved</span></div>
+        <div class="sidebar-item"><img id="side-dp" style="width:36px; border-radius:50%;"> <b id="side-name">Loading...</b></div>
+        <div class="sidebar-item">💎 <span>VIP Center</span></div>
+        <div class="sidebar-item">⚙️ <span>Settings</span></div>
         <hr style="opacity:0.1">
-        <small style="color:var(--gray)">Powered by M.A. Gohar</small>
+        <p style="font-size:12px; color:var(--gray); padding:10px;">Powered by M.A. Gohar</p>
     </div>
 
     <div class="feed-area">
-        <div class="reward-card" style="margin-bottom:20px;">
+        <div class="reward-card">
             <div style="display:flex; gap:10px;">
                 <img id="post-dp" style="width:40px; height:40px; border-radius:50%;">
-                <input type="text" placeholder="What's on your mind, Gohar?" style="flex:1; border:none; background:var(--bg); border-radius:20px; padding:0 20px; outline:none;">
+                <input type="text" id="pInp" placeholder="Share your thoughts, Gohar..." style="flex:1; border:none; background:var(--bg); border-radius:25px; padding:0 15px; outline:none; color:var(--text);">
             </div>
-            <hr style="opacity:0.1; margin:15px 0;">
-            <div style="display:flex; justify-content:space-around;">
-                <span>📹 Live</span> <span>🖼️ Photo</span> <span>😊 Feeling</span>
+            <div id="pre-img-box" style="display:none; margin-top:10px;"><img id="pImgPre" style="width:100px; border-radius:8px;"></div>
+            <hr style="opacity:0.05; margin:15px 0;">
+            <div style="display:flex; justify-content:space-around; align-items:center;">
+                <label style="cursor:pointer; color:var(--gray);">🖼️ Photo <input type="file" accept="image/*" hidden onchange="preView(this)"></label>
+                <button onclick="sendP()" style="background:var(--main); color:white; border:none; padding:6px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">Post Now</button>
             </div>
         </div>
         <div id="posts-container"></div>
@@ -79,7 +80,7 @@
 
     <div class="right-bar">
         <div class="reward-card">
-            <h4 style="margin-top:0;">Reward Milestones</h4>
+            <h4 style="margin:0 0 10px 0;">Milestones</h4>
             <div class="milestone"><span class="m-dot" style="background:#b4b4b4">S</span> Silver: 0-50 Likes</div>
             <div class="milestone"><span class="m-dot" style="background:#ffd700">G</span> Gold: 51-200 Likes</div>
             <div class="milestone"><span class="m-dot" style="background:#00d2ff">D</span> DIAMOND: 200+</div>
@@ -91,28 +92,90 @@
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
+    let me = null;
 
     auth.onAuthStateChanged(user => {
         if(user) {
+            me = user;
             document.getElementById('user-dp').src = user.photoURL;
             document.getElementById('side-dp').src = user.photoURL;
             document.getElementById('post-dp').src = user.photoURL;
             document.getElementById('side-name').innerText = user.displayName;
+            db.ref('users/' + user.uid).update({ n: user.displayName, p: user.photoURL });
             loadFeed();
         } else {
             auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
         }
     });
 
-    function toggleTheme() {
-        const b = document.body;
-        b.dataset.theme = b.dataset.theme === 'light' ? 'dark' : 'light';
-    }
+    window.toggleTheme = () => { document.body.dataset.theme = document.body.dataset.theme === 'light' ? 'dark' : 'light'; };
+
+    window.preView = (input) => {
+        if(input.files[0]) {
+            const r = new FileReader();
+            r.onload = e => { 
+                document.getElementById('pImgPre').src = e.target.result;
+                document.getElementById('pre-img-box').style.display = 'block';
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+    };
+
+    window.sendP = () => {
+        const txt = document.getElementById('pInp').value;
+        const img = document.getElementById('pImgPre').src;
+        const hasImg = document.getElementById('pre-img-box').style.display === 'block';
+        if(!txt && !hasImg) return;
+        db.ref('posts').push({
+            uid: me.uid, n: me.displayName, p: me.photoURL,
+            t: txt, i: hasImg ? img : "", likes: 0, ts: Date.now()
+        });
+        document.getElementById('pInp').value = "";
+        document.getElementById('pre-img-box').style.display = 'none';
+    };
 
     function loadFeed() {
-        // Post loading logic will be in Part 2
-        document.getElementById('posts-container').innerHTML = "<center>Loading Engine...</center>";
+        db.ref('posts').on('value', s => {
+            const feed = document.getElementById('posts-container');
+            feed.innerHTML = "";
+            s.forEach(x => {
+                const p = x.val();
+                let b = "⚪ SILVER", c = "#b4b4b4";
+                if(p.likes > 200) { b = "💎 DIAMOND"; c = "#00d2ff"; }
+                else if(p.likes > 50) { b = "🟡 GOLD"; c = "#ffd700"; }
+
+                feed.innerHTML = `
+                <div class="post-card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img src="${p.p}" style="width:40px; border-radius:50%;">
+                            <b>${p.n}</b>
+                        </div>
+                        <span class="badge" style="background:${c}">${b}</span>
+                    </div>
+                    <p>${p.t}</p>
+                    ${p.i ? `<img src="${p.i}" style="width:100%; border-radius:8px;">` : ''}
+                    <hr style="opacity:0.05">
+                    <button onclick="like('${x.key}')" style="background:none; border:none; color:var(--main); font-weight:bold; cursor:pointer;">❤️ ${p.likes || 0} Likes</button>
+                </div>` + feed.innerHTML;
+            });
+        });
     }
+
+    window.like = (id) => db.ref('posts/'+id+'/likes').transaction(c => (c || 0) + 1);
+
+    window.searchUsers = (v) => {
+        if(!v) { loadFeed(); return; }
+        db.ref('users').orderByChild('n').startAt(v).endAt(v+"\uf8ff").once('value', s => {
+            const feed = document.getElementById('posts-container');
+            feed.innerHTML = "<h3>Search Results:</h3>";
+            s.forEach(u => {
+                feed.innerHTML += `<div class="sidebar-item" onclick="alert('Profile of ${u.val().n}')"><img src="${u.val().p}" style="width:30px; border-radius:50%;"> ${u.val().n}</div>`;
+            });
+        });
+    };
+
+    window.logout = () => { if(confirm("Logout?")) auth.signOut().then(()=>location.reload()); };
 </script>
 </body>
 </html>
