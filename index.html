@@ -25,3 +25,187 @@
     </div>
 </div>
 <audio id="beep-sound" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
+<script>
+    // --- 1. INITIALIZATION & BRANDING ---
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", 
+        authDomain: "massfrendz.firebaseapp.com", 
+        databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", 
+        projectId: "massfrendz" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(); 
+    const db = firebase.database();
+    
+    let me = null, chatID = null, viewOnceActive = false, tempImg = "";
+
+    // --- 2. AUTH & PROFILE LOGIC ---
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            me = user;
+            updateUI(user);
+            db.ref('users/' + user.uid).update({ n: user.displayName, p: user.photoURL, online: true });
+            loadPosts();
+            loadOnline();
+            listenToNotif();
+        } else {
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        }
+    });
+
+    function updateUI(u) {
+        document.getElementById('user-avatar').src = u.photoURL;
+        document.getElementById('post-p-avatar').src = u.photoURL;
+        document.getElementById('side-dp').src = u.photoURL;
+        document.getElementById('side-name').innerText = u.displayName;
+    }
+
+    window.openProfile = () => {
+        const newName = prompt("Enter New Name:", me.displayName);
+        if(newName) {
+            me.updateProfile({ displayName: newName }).then(() => {
+                db.ref('users/' + me.uid).update({ n: newName });
+                location.reload();
+            });
+        }
+    };
+
+    window.updateProfilePic = (input) => {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                me.updateProfile({ photoURL: e.target.result }).then(() => {
+                    db.ref('users/' + me.uid).update({ p: e.target.result });
+                    location.reload();
+                });
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    };
+
+    // --- 3. POSTING & NOTIFICATION LOGIC ---
+    window.previewImg = (input) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            tempImg = e.target.result;
+            document.getElementById('img-preview').innerHTML = `<img src="${tempImg}" style="width:100%; border-radius:10px; margin-top:10px;">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    };
+
+    window.handlePost = () => {
+        const txt = document.getElementById('post-text').value;
+        const privacy = document.getElementById('post-privacy').value;
+        if(txt || tempImg) {
+            const postKey = db.ref('posts').push().key;
+            db.ref('posts/' + postKey).set({
+                uid: me.uid, n: me.displayName, p: me.photoURL, 
+                t: txt, img: tempImg, privacy: privacy, ts: Date.now()
+            });
+            // Story notification to friends
+            db.ref('notif').push({ from: me.displayName, type: 'post' });
+            document.getElementById('post-text').value = "";
+            document.getElementById('img-preview').innerHTML = "";
+            tempImg = "";
+        }
+    };
+
+    function loadPosts() {
+        db.ref('posts').on('value', s => {
+            const feed = document.getElementById('feed'); feed.innerHTML = "";
+            s.forEach(x => {
+                const p = x.val();
+                if(p.privacy === 'friends' && p.uid !== me.uid) return; // Basic Privacy
+                const isLiked = p.likes && p.likes[me.uid];
+                feed.innerHTML = `
+                <div class="post-card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img src="${p.p}" style="width:40px; height:40px; border-radius:50%;">
+                            <b>${p.n}</b>
+                        </div>
+                        ${p.uid === me.uid ? `<i class="fas fa-trash" onclick="delPost('${x.key}')" style="color:red; cursor:pointer;">
+                        </i>` : ''}
+                    </div>
+                    <p>${p.t}</p>
+                    ${p.img ? `<img src="${p.img}" style="width:100%; border-radius:10px;">` : ''}
+                    <hr style="opacity:0.1">
+                    <div style="display:flex; gap:20px; font-weight:bold;">
+                        <span onclick="likePost('${x.key}')" style="cursor:pointer; color:${isLiked ? 'var(--main)' : 'gray'}"><i class="fas fa-thumbs-up"></i> Like</span>
+                        <span onclick="openChat('${p.uid}','${p.n}','${p.p}')" style="cursor:pointer; color:gray"><i class="fas fa-comment"></i> Chat</span>
+                    </div>
+                </div>` + feed.innerHTML;
+            });
+        });
+    }
+
+    // --- 5. LOGIC UPDATES & BRANDING ---
+    window.delPost = (id) => { if(confirm("Delete this post?")) db.ref('posts/' + id).remove(); };
+    window.likePost = (id) => {
+        const ref = db.ref('posts/' + id + '/likes/' + me.uid);
+        ref.once('value', s => { if(s.exists()) ref.remove(); else ref.set(true); });
+    };
+
+    window.openChat = (uid, name, img) => {
+        if(uid === me.uid) return;
+        chatID = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
+        document.getElementById('chat-user-name').innerText = name;
+        document.getElementById('chat-user-img').src = img;
+        document.getElementById('chat-window').style.display = 'flex';
+        
+        db.ref('msgs/' + chatID).on('value', s => {
+            const box = document.getElementById('chat-msgs'); box.innerHTML = "";
+            s.forEach(m => {
+                const d = m.val();
+                const isMe = d.s === me.uid;
+                box.innerHTML += `
+                <div style="align-self:${isMe?'flex-end':'flex-start'}; background:${isMe?'var(--main)':'#eee'}; color:${isMe?'white':'black'}; padding:10px; border-radius:15px; max-width:80%; position:relative; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                    ${d.t}
+                    <i class="fas fa-trash-alt" onclick="delMsg('${m.key}')" style="font-size:10px; margin-left:8px; cursor:pointer; opacity:0.6;"></i>
+                </div>`;
+            });
+            box.scrollTop = box.scrollHeight;
+            if(!isMe) document.getElementById('beep-sound').play();
+        });
+    };
+
+    window.delMsg = (mid) => { if(confirm("Unsend message for everyone?")) db.ref('msgs/' + chatID + '/' + mid).remove(); };
+    window.closeChat = () => document.getElementById('chat-window').style.display = 'none';
+    window.sendMsg = () => {
+        const val = document.getElementById('msg-input').value;
+        if(val) {
+            db.ref('msgs/' + chatID).push({ s: me.uid, t: val, ts: Date.now() });
+            document.getElementById('msg-input').value = "";
+        }
+    };
+
+    function loadOnline() {
+        db.ref('users').on('value', s => {
+            const list = document.getElementById('contact-list'); list.innerHTML = "";
+            s.forEach(u => {
+                if(u.key !== me.uid) {
+                    list.innerHTML += `<div onclick="openChat('${u.key}','${u.val().n}','${u.val().p}')" style="display:flex; align-items:center; gap:10px; margin-bottom:12px; cursor:pointer; padding:5px; border-radius:8px; transition:0.2s;" class="contact-item">
+                        <div style="position:relative;"><img src="${u.val().p}" style="width:38px; height:38px; border-radius:50%; object-fit:cover;"><span style="position:absolute; bottom:0; right:0; width:12px; height:12px; background:#31a24c; border:2px solid white; border-radius:50%;"></span></div>
+                        <span style="font-weight:500;">${u.val().n}</span>
+                    </div>`;
+                }
+            });
+        });
+    }
+
+    function listenToNotif() {
+        db.ref('notif').limitToLast(1).on('child_added', s => {
+            if(s.val().from !== me.displayName) {
+                document.getElementById('notif-count').innerText = "!";
+                document.getElementById('beep-sound').play();
+            }
+        });
+    }
+
+    // Beautiful Branding Injection
+    document.querySelector('nav div').insertAdjacentHTML('afterbegin', `
+        <h1 style="margin:0 15px 0 0; font-family:'Arial Black'; font-size:24px; background: linear-gradient(to right, #00c853, #00acc1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing:-1px;">MASSFRENDZ</h1>
+    `);
+</script>
+</body>
+</html>
