@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz | M.A. Gohar</title>
+    <title>Massfrendz | Gohar</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -11,29 +11,19 @@
         :root { --main: #00c853; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; }
         [data-theme="dark"] { --bg: #111; --card: #222; --text: #eee; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-top: 60px; }
-        
-        /* Unique Layout: Nav Buttons on Right */
         nav { position: fixed; top: 0; width: 100%; background: var(--card); display: flex; align-items: center; padding: 0 15px; height: 56px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; box-sizing: border-box; }
         .logo { font-weight: 900; color: var(--main); font-size: 20px; flex: 1; }
         .nav-right { display: flex; gap: 18px; align-items: center; }
         .nav-btn { font-size: 22px; cursor: pointer; background: none; border: none; color: var(--text); }
-
         .container { max-width: 550px; margin: auto; padding: 10px; }
         .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        
-        /* Poll UI */
-        .poll-opt { border: 1px solid var(--main); padding: 8px; margin-top: 5px; border-radius: 8px; cursor: pointer; text-align: center; transition: 0.3s; }
-        .poll-opt:hover { background: var(--main); color: white; }
-
-        /* Voice Note UI */
-        .voice-rec { background: #ff5252; color: white; padding: 10px; border-radius: 50%; border: none; cursor: pointer; }
-        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 80%; margin-bottom: 5px; position: relative; }
+        #chat-win, #list-win { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; flex-direction: column; }
+        #msgs, #list-body { flex: 1; overflow-y: auto; padding: 15px; }
+        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 80%; margin-bottom: 5px; }
         .me { background: var(--main); color: white; align-self: flex-end; }
         .them { background: #ddd; color: black; align-self: flex-start; }
-        
-        #chat-win { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; flex-direction: column; }
-        #msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
-        .enc-mark { text-align: center; font-size: 11px; color: grey; margin-bottom: 10px; }
+        .user-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .btn-sm { padding: 5px 10px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body data-theme="light">
@@ -42,42 +32,44 @@
     <div class="logo">MASSFRENDZ</div>
     <div class="nav-right">
         <button class="nav-btn" onclick="location.reload()">🏠</button>
-        <button class="nav-btn" onclick="alert('Requests coming soon')">👥</button>
+        <button class="nav-btn" onclick="showList()">👥</button>
         <button class="nav-btn" onclick="toggleTheme()">🌓</button>
-        <img id="my-dp" onclick="logout()" style="width:32px; height:32px; border-radius:50%; border:1px solid var(--main);">
+        <img id="my-dp" style="width:32px; height:32px; border-radius:50%; border:1px solid var(--main);">
     </div>
 </nav>
 
 <div class="container">
-    <input type="text" id="find" placeholder="🔍 Search friends..." oninput="search(this.value)" style="width:100%; padding:10px; border-radius:20px; border:1px solid #ddd; margin-bottom:15px;">
+    <input type="text" id="find" placeholder="🔍 Search Friends..." onkeyup="searchUsers(this.value)" style="width:100%; padding:12px; border-radius:25px; border:1px solid #ddd; margin-bottom:15px; outline:none;">
     
     <div class="card">
-        <textarea id="pTxt" placeholder="Post a question or thought..." style="width:100%; border:none; outline:none; background:transparent; color:inherit; height:45px;"></textarea>
-        <div id="poll-inputs" style="display:none; margin-top:10px;">
-            <input type="text" id="opt1" placeholder="Option 1" style="width:45%; padding:5px;">
-            <input type="text" id="opt2" placeholder="Option 2" style="width:45%; padding:5px;">
-        </div>
+        <textarea id="pTxt" placeholder="What's on your mind?" style="width:100%; border:none; outline:none; background:transparent; height:50px; resize:none;"></textarea>
+        <div id="pre-p"></div>
         <hr style="opacity:0.1">
-        <div style="display:flex; justify-content:space-between;">
-            <button onclick="togglePoll()" style="background:none; border:none; cursor:pointer;">📊 Poll</button>
-            <button onclick="sendP()" style="background:var(--main); color:white; border:none; padding:5px 15px; border-radius:5px;">POST</button>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label style="cursor:pointer;">🖼️ Photo<input type="file" accept="image/*" hidden onchange="preP(this)"></label>
+            <button onclick="sendP()" style="background:var(--main); color:white; border:none; padding:7px 20px; border-radius:5px; font-weight:bold;">POST</button>
         </div>
     </div>
-
     <div id="feed"></div>
+</div>
+
+<div id="list-win">
+    <div style="padding:15px; background:var(--card); display:flex; justify-content:space-between; border-bottom:1px solid var(--main);">
+        <b onclick="document.getElementById('list-win').style.display='none'">← Back</b>
+        <span>Friends & Blocked</span>
+    </div>
+    <div id="list-body"></div>
 </div>
 
 <div id="chat-win">
     <div style="padding:15px; background:var(--card); display:flex; align-items:center; gap:15px; border-bottom:1px solid var(--main);">
-        <b onclick="closeChat()" style="cursor:pointer; font-size:20px;">←</b>
-        <span id="c-name" style="font-weight:bold;">Chat</span>
+        <b onclick="closeChat()">←</b> <span id="c-name">Chat</span>
     </div>
-    <div id="msgs"></div>
-    <div style="padding:10px; background:var(--card); display:flex; gap:10px; align-items:center;">
-        <button id="recBtn" class="voice-rec">🎤</button>
+    <div id="msgs" style="display:flex; flex-direction:column;"></div>
+    <div style="padding:10px; background:var(--card); display:flex; gap:10px;">
+        <label>🖼️<input type="file" accept="image/*" hidden onchange="sendM('img', this)"></label>
         <input type="text" id="mInp" placeholder="Message..." style="flex:1; border:none; background:var(--bg); padding:10px; border-radius:20px;">
-        <label>🎥<input type="file" accept="video/*" hidden onchange="sendM('video', this)"></label>
-        <button onclick="sendM('text')" style="background:none; border:none; font-size:22px;">🚀</button>
+        <button onclick="sendM('text')">🚀</button>
     </div>
 </div>
 
@@ -85,27 +77,59 @@
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
-    let me = null, actChat = null, mediaRec, audioChunks = [];
+    let me = null, actChat = null;
 
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
-        auth.onAuthStateChanged(user => {
-            if(user) { me = user; document.getElementById('my-dp').src = user.photoURL; loadFeed(); }
-            else { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-        });
+    auth.onAuthStateChanged(user => {
+        if(user) { me = user; document.getElementById('my-dp').src = user.photoURL; db.ref('users/'+user.uid).set({n: user.displayName, p: user.photoURL}); loadFeed(); }
+        else { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     });
-
-    window.toggleTheme = () => document.body.dataset.theme = document.body.dataset.theme === 'light' ? 'dark' : 'light';
-    window.togglePoll = () => { const p = document.getElementById('poll-inputs'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
 
     function loadFeed() {
         db.ref('posts').on('value', s => {
             const f = document.getElementById('feed'); f.innerHTML = "";
             s.forEach(x => {
                 const p = x.val();
-                let pollHtml = p.opt1 ? `<div class="poll-opt" onclick="vote('${x.key}','1')">${p.opt1}</div><div class="poll-opt" onclick="vote('${x.key}','2')">${p.opt2}</div>` : "";
-                f.innerHTML = `<div class="card" onclick="openChat('${p.uid}','${p.n}')">
-                    <b>${p.n}</b><p>${p.t}</p>${pollHtml}
+                f.innerHTML = `<div class="card">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;" onclick="openChat('${p.uid}','${p.n}')">
+                        <img src="${p.p}" style="width:35px; height:35px; border-radius:50%;"> <b>${p.n || 'User'}</b>
+                    </div>
+                    <p>${p.t}</p>
+                    ${p.i ? `<img src="${p.i}" style="width:100%; border-radius:8px;">` : ''}
                 </div>` + f.innerHTML;
+            });
+        });
+    }
+
+    window.searchUsers = (v) => {
+        if(!v) { loadFeed(); return; }
+        db.ref('users').once('value', s => {
+            const f = document.getElementById('feed'); f.innerHTML = "<h3>Results</h3>";
+            s.forEach(u => {
+                if(u.val().n.toLowerCase().includes(v.toLowerCase()) && u.key !== me.uid) {
+                    f.innerHTML += `<div class="user-row card">
+                        <span>${u.val().n}</span>
+                        <button class="btn-sm" style="background:var(--main); color:white" onclick="openChat('${u.key}','${u.val().n}')">Message</button>
+                    </div>`;
+                }
+            });
+        });
+    }
+
+    window.showList = () => {
+        document.getElementById('list-win').style.display = 'flex';
+        const body = document.getElementById('list-body'); body.innerHTML = "Loading...";
+        db.ref('users').once('value', s => {
+            body.innerHTML = "<h4>Users & Friends</h4>";
+            s.forEach(u => {
+                if(u.key !== me.uid) {
+                    body.innerHTML += `<div class="user-row">
+                        <b>${u.val().n}</b>
+                        <div>
+                            <button class="btn-sm" style="background:red; color:white" onclick="block('${u.key}')">Block</button>
+                            <button class="btn-sm" onclick="openChat('${u.key}','${u.val().n}')">Chat</button>
+                        </div>
+                    </div>`;
+                }
             });
         });
     }
@@ -115,11 +139,10 @@
         document.getElementById('c-name').innerText = name;
         document.getElementById('chat-win').style.display = 'flex';
         db.ref('chats/'+actChat).on('value', s => {
-            const mBox = document.getElementById('msgs'); mBox.innerHTML = '<div class="enc-mark">🔒 End-to-End Encrypted</div>';
+            const mBox = document.getElementById('msgs'); mBox.innerHTML = "";
             s.forEach(x => {
-                const m = x.val(); let h = `<div class="bubble ${m.s===me.uid?'me':'them'}" oncontextmenu="delM('${x.key}');return false">`;
-                if(m.ty === 'voice' || m.ty === 'audio') h += `<audio controls src="${m.c}"></audio>`;
-                else if(m.ty === 'video') h += `<video controls src="${m.c}"></video>`;
+                const m = x.val(); let h = `<div class="bubble ${m.s===me.uid?'me':'them'}">`;
+                if(m.ty === 'img') h += `<img src="${m.c}" style="width:100%; border-radius:10px;">`;
                 else h += m.t;
                 mBox.innerHTML += h + `</div>`;
             });
@@ -133,31 +156,19 @@
             if(t) db.ref('chats/'+actChat).push({ s: me.uid, t: t, ty: 'text' });
             document.getElementById('mInp').value = "";
         } else {
-            const r = new FileReader(); r.onload = e => db.ref('chats/'+actChat).push({ s: me.uid, c: e.target.result, ty: ty });
+            const r = new FileReader(); r.onload = e => db.ref('chats/'+actChat).push({ s: me.uid, c: e.target.result, ty: 'img' });
             r.readAsDataURL(input.files[0]);
         }
     };
 
-    // Voice Note Logic
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        mediaRec = new MediaRecorder(stream);
-        mediaRec.ondataavailable = e => audioChunks.push(e.data);
-        mediaRec.onstop = () => {
-            const blob = new Blob(audioChunks, { type: 'audio/mp3' });
-            const r = new FileReader(); r.onload = e => db.ref('chats/'+actChat).push({ s: me.uid, c: e.target.result, ty: 'voice' });
-            r.readAsDataURL(blob); audioChunks = [];
-        };
-    });
-    document.getElementById('recBtn').onmousedown = () => mediaRec.start();
-    document.getElementById('recBtn').onmouseup = () => mediaRec.stop();
-
     window.sendP = () => {
-        const t = document.getElementById('pTxt').value, o1 = document.getElementById('opt1').value, o2 = document.getElementById('opt2').value;
-        if(t) { db.ref('posts').push({ uid: me.uid, n: me.displayName, t: t, opt1: o1, opt2: o2 }); document.getElementById('pTxt').value = ""; }
+        const t = document.getElementById('pTxt').value, i = document.getElementById('pre-p').querySelector('img')?.src || "";
+        if(t || i) { db.ref('posts').push({ uid: me.uid, n: me.displayName, p: me.photoURL, t: t, i: i }); document.getElementById('pTxt').value = ""; document.getElementById('pre-p').innerHTML = ""; }
     };
 
+    window.preP = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>document.getElementById('pre-p').innerHTML=`<img src="${e.target.result}" style="width:100%; border-radius:8px; margin-top:10px;">`; r.readAsDataURL(i.files[0]); } };
+    window.toggleTheme = () => document.body.dataset.theme = document.body.dataset.theme === 'light' ? 'dark' : 'light';
     window.closeChat = () => document.getElementById('chat-win').style.display = 'none';
-    window.logout = () => { if(confirm("Logout?")) auth.signOut().then(() => location.reload()); };
 </script>
 </body>
 </html>
