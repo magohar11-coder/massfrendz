@@ -3,76 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz Cyber | M.A. Gohar</title>
-    
+    <title>Massfrendz | M.A. Gohar</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-
     <style>
-        /* UNIQUE CYBER THEME */
-        :root { --neon-purple: #bc13fe; --neon-blue: #00f3ff; --dark-bg: #0d0221; --glass: rgba(255, 255, 255, 0.1); --text: #ffffff; }
-        body { background: var(--dark-bg); color: var(--text); font-family: 'Orbitron', sans-serif; margin: 0; padding-bottom: 70px; overflow-x: hidden; }
-
-        header { background: rgba(13, 2, 33, 0.9); border-bottom: 2px solid var(--neon-purple); padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 0 15px var(--neon-purple); }
-        .logo { font-size: 20px; font-weight: 900; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 2px; }
-
-        .container { max-width: 500px; margin: auto; padding: 15px; }
+        :root { --main: #00c853; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; }
+        [data-theme="dark"] { --bg: #111; --card: #222; --text: #eee; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-top: 60px; }
         
-        /* Glassmorphism Cards */
-        .glass-card { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 15px; margin-bottom: 15px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
+        /* Unique Layout: Nav Buttons on Right */
+        nav { position: fixed; top: 0; width: 100%; background: var(--card); display: flex; align-items: center; padding: 0 15px; height: 56px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; box-sizing: border-box; }
+        .logo { font-weight: 900; color: var(--main); font-size: 20px; flex: 1; }
+        .nav-right { display: flex; gap: 18px; align-items: center; }
+        .nav-btn { font-size: 22px; cursor: pointer; background: none; border: none; color: var(--text); }
 
-        /* Search Bar Cyber Look */
-        #searchBox { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--neon-blue); border-radius: 30px; color: white; margin-bottom: 15px; box-sizing: border-box; }
+        .container { max-width: 550px; margin: auto; padding: 10px; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        
+        /* Poll UI */
+        .poll-opt { border: 1px solid var(--main); padding: 8px; margin-top: 5px; border-radius: 8px; cursor: pointer; text-align: center; transition: 0.3s; }
+        .poll-opt:hover { background: var(--main); color: white; }
 
-        /* Story Neon Rounds */
-        .story-tray { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; }
-        .story-ring { min-width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--neon-purple); padding: 3px; cursor: pointer; position: relative; }
-        .story-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-
-        /* Buttons */
-        .neon-btn { background: transparent; border: 1px solid var(--neon-purple); color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
-        .neon-btn:hover { background: var(--neon-purple); box-shadow: 0 0 10px var(--neon-purple); }
-
-        /* Personal Chat Window */
-        #chat-win { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark-bg); z-index: 5000; display: none; flex-direction: column; }
-        .chat-top { padding: 15px; border-bottom: 1px solid var(--neon-blue); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); }
-        .call-btns { display: flex; gap: 15px; font-size: 20px; }
-        #msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .bubble { padding: 12px; border-radius: 15px; max-width: 70%; line-height: 1.4; }
-        .me { background: var(--neon-purple); align-self: flex-end; box-shadow: 0 0 8px var(--neon-purple); }
-        .them { background: rgba(255,255,255,0.1); align-self: flex-start; }
-
-        .bottom-bar { position: fixed; bottom: 0; width: 100%; height: 60px; background: rgba(13, 2, 33, 0.95); border-top: 2px solid var(--neon-blue); display: flex; justify-content: space-around; align-items: center; }
-        .nav-icon { font-size: 24px; cursor: pointer; color: var(--neon-blue); }
+        /* Voice Note UI */
+        .voice-rec { background: #ff5252; color: white; padding: 10px; border-radius: 50%; border: none; cursor: pointer; }
+        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 80%; margin-bottom: 5px; position: relative; }
+        .me { background: var(--main); color: white; align-self: flex-end; }
+        .them { background: #ddd; color: black; align-self: flex-start; }
+        
+        #chat-win { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; flex-direction: column; }
+        #msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
+        .enc-mark { text-align: center; font-size: 11px; color: grey; margin-bottom: 10px; }
     </style>
 </head>
-<body>
+<body data-theme="light">
 
-<header>
-    <div class="logo">MASSFRENDZ_XP</div>
-    <div style="display:flex; gap:10px;">
-        <span onclick="logout()" style="cursor:pointer; color:red; font-size:12px;">SHUTDOWN</span>
-        <img id="my-p" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--neon-blue);">
+<nav>
+    <div class="logo">MASSFRENDZ</div>
+    <div class="nav-right">
+        <button class="nav-btn" onclick="location.reload()">🏠</button>
+        <button class="nav-btn" onclick="alert('Requests coming soon')">👥</button>
+        <button class="nav-btn" onclick="toggleTheme()">🌓</button>
+        <img id="my-dp" onclick="logout()" style="width:32px; height:32px; border-radius:50%; border:1px solid var(--main);">
     </div>
-</header>
+</nav>
 
 <div class="container">
-    <input type="text" id="searchBox" placeholder="SEARCH GLOBAL USERS..." oninput="findUser(this.value)">
-
-    <div class="story-tray">
-        <div class="story-ring" onclick="document.getElementById('sInp').click()" style="display:flex; align-items:center; justify-content:center; font-size:25px; border-style:dashed;">+</div>
-        <input type="file" id="sInp" hidden onchange="upStory(this)">
-        <div id="story-list" style="display:flex; gap:10px;"></div>
-    </div>
-
-    <div class="glass-card">
-        <textarea id="pTxt" placeholder="BROADCAST YOUR THOUGHTS..." style="width:100%; background:transparent; border:none; color:white; outline:none; height:60px;"></textarea>
-        <div id="pPre"></div>
-        <div style="display:flex; justify-content:space-between; margin-top:10px;">
-            <input type="file" id="pImg" hidden onchange="preImg(this)">
-            <button onclick="document.getElementById('pImg').click()" class="neon-btn">IMAGE</button>
-            <button class="neon-btn" onclick="sendPost()">POST</button>
+    <input type="text" id="find" placeholder="🔍 Search friends..." oninput="search(this.value)" style="width:100%; padding:10px; border-radius:20px; border:1px solid #ddd; margin-bottom:15px;">
+    
+    <div class="card">
+        <textarea id="pTxt" placeholder="Post a question or thought..." style="width:100%; border:none; outline:none; background:transparent; color:inherit; height:45px;"></textarea>
+        <div id="poll-inputs" style="display:none; margin-top:10px;">
+            <input type="text" id="opt1" placeholder="Option 1" style="width:45%; padding:5px;">
+            <input type="text" id="opt2" placeholder="Option 2" style="width:45%; padding:5px;">
+        </div>
+        <hr style="opacity:0.1">
+        <div style="display:flex; justify-content:space-between;">
+            <button onclick="togglePoll()" style="background:none; border:none; cursor:pointer;">📊 Poll</button>
+            <button onclick="sendP()" style="background:var(--main); color:white; border:none; padding:5px 15px; border-radius:5px;">POST</button>
         </div>
     </div>
 
@@ -80,127 +68,96 @@
 </div>
 
 <div id="chat-win">
-    <div class="chat-header chat-top">
-        <b onclick="closeChat()">← BACK</b>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <img id="c-dp" style="width:35px; height:35px; border-radius:50%;">
-            <span id="c-name">USER</span>
-        </div>
-        <div class="call-btns">
-            <span onclick="alert('Starting Audio Call...')">📞</span>
-            <span onclick="alert('Starting Video Call...')">📹</span>
-        </div>
+    <div style="padding:15px; background:var(--card); display:flex; align-items:center; gap:15px; border-bottom:1px solid var(--main);">
+        <b onclick="closeChat()" style="cursor:pointer; font-size:20px;">←</b>
+        <span id="c-name" style="font-weight:bold;">Chat</span>
     </div>
     <div id="msgs"></div>
-    <div style="padding:15px; display:flex; gap:10px; background:rgba(255,255,255,0.05);">
-        <input type="text" id="mInp" placeholder="Enter signal..." style="flex:1; background:transparent; border:1px solid var(--neon-purple); color:white; padding:12px; border-radius:10px;">
-        <button onclick="sendMsg()" class="neon-btn">SEND</button>
+    <div style="padding:10px; background:var(--card); display:flex; gap:10px; align-items:center;">
+        <button id="recBtn" class="voice-rec">🎤</button>
+        <input type="text" id="mInp" placeholder="Message..." style="flex:1; border:none; background:var(--bg); padding:10px; border-radius:20px;">
+        <label>🎥<input type="file" accept="video/*" hidden onchange="sendM('video', this)"></label>
+        <button onclick="sendM('text')" style="background:none; border:none; font-size:22px;">🚀</button>
     </div>
-</div>
-
-<div class="bottom-bar">
-    <div class="nav-icon">🏠</div>
-    <div class="nav-icon" onclick="alert('Opening Friend Requests')">👥</div>
-    <div class="nav-icon" onclick="alert('Inbox Notifications')">🔔</div>
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA",
-        authDomain: "massfrendz.firebaseapp.com",
-        databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/",
-        projectId: "massfrendz"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
-    let me = null; let chat_id = null;
+    let me = null, actChat = null, mediaRec, audioChunks = [];
 
-    auth.onAuthStateChanged(user => {
-        if(user) {
-            me = user;
-            db.ref('users/'+user.uid).on('value', s => {
-                const d = s.val() || { name: user.displayName, pic: user.photoURL, uid: user.uid };
-                document.getElementById('my-p').src = d.pic;
-                if(!s.val()) db.ref('users/'+user.uid).set(d);
-            });
-            startEngine();
-        } else { auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+        auth.onAuthStateChanged(user => {
+            if(user) { me = user; document.getElementById('my-dp').src = user.photoURL; loadFeed(); }
+            else { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+        });
     });
 
-    // CHAT & DELETE
-    window.openChat = (uid, name, pic) => {
-        chat_id = me.uid < uid ? me.uid+uid : uid+me.uid;
-        document.getElementById('c-name').innerText = name;
-        document.getElementById('c-dp').src = pic;
-        document.getElementById('chat-win').style.display = 'flex';
-        db.ref('chats/'+chat_id).on('value', snap => {
-            const cont = document.getElementById('msgs'); cont.innerHTML = "";
-            snap.forEach(c => {
-                const m = c.val();
-                cont.innerHTML += `<div class="bubble ${m.s===me.uid?'me':'them'}" oncontextmenu="delM('${c.key}')">${m.t}</div>`;
-            });
-            cont.scrollTop = cont.scrollHeight;
-        });
-    };
+    window.toggleTheme = () => document.body.dataset.theme = document.body.dataset.theme === 'light' ? 'dark' : 'light';
+    window.togglePoll = () => { const p = document.getElementById('poll-inputs'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
 
-    window.sendMsg = () => {
-        const t = document.getElementById('mInp').value;
-        if(t) { db.ref('chats/'+chat_id).push({ s: me.uid, t: t, time: Date.now() }); document.getElementById('mInp').value = ""; }
-    };
-
-    window.delM = (mid) => { if(confirm("ERASE MESSAGE?")) db.ref(`chats/${chat_id}/${mid}`).update({t: "MESSAGE TERMINATED"}); };
-
-    // SEARCH & FEED
-    window.findUser = (v) => {
-        if(!v) { startEngine(); return; }
-        db.ref('users').orderByChild('name').startAt(v).endAt(v+"\uf8ff").once('value', snap => {
-            const f = document.getElementById('feed'); f.innerHTML = "<h4>RESULTS:</h4>";
-            snap.forEach(u => {
-                f.innerHTML += `<div class="glass-card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; align-items:center; gap:10px;"><img src="${u.val().pic}" class="story-ring" style="width:30px; height:30px;"> ${u.val().name}</div>
-                    <button class="neon-btn" onclick="sendR('${u.key}')">CONNECT</button>
-                </div>`;
-            });
-        });
-    };
-
-    function startEngine() {
-        db.ref('posts').on('value', snap => {
+    function loadFeed() {
+        db.ref('posts').on('value', s => {
             const f = document.getElementById('feed'); f.innerHTML = "";
-            snap.forEach(c => {
-                const p = c.val();
-                f.innerHTML = `<div class="glass-card">
-                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;" onclick="openChat('${p.uid}','${p.name}','${p.pic}')">
-                        <img src="${p.pic}" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--neon-blue);"> <b>${p.name}</b>
-                    </div>
-                    <p>${p.text}</p>
-                    ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:10px; border:1px solid var(--glass);">` : ''}
+            s.forEach(x => {
+                const p = x.val();
+                let pollHtml = p.opt1 ? `<div class="poll-opt" onclick="vote('${x.key}','1')">${p.opt1}</div><div class="poll-opt" onclick="vote('${x.key}','2')">${p.opt2}</div>` : "";
+                f.innerHTML = `<div class="card" onclick="openChat('${p.uid}','${p.n}')">
+                    <b>${p.n}</b><p>${p.t}</p>${pollHtml}
                 </div>` + f.innerHTML;
-            });
-        });
-
-        db.ref('stories').on('value', snap => {
-            const s = document.getElementById('story-list'); s.innerHTML = "";
-            snap.forEach(v => {
-                s.innerHTML += `<div class="story-ring"><img src="${v.val().img}"></div>`;
             });
         });
     }
 
-    window.sendPost = () => {
-        const t = document.getElementById('pTxt').value;
-        const file = document.getElementById('pImg').files[0];
-        const push = (img="") => {
-            db.ref('posts').push({ uid: me.uid, name: me.displayName, pic: document.getElementById('my-p').src, text: t, image: img, time: Date.now() });
-            document.getElementById('pTxt').value = ""; document.getElementById('pPre').innerHTML = "";
-        };
-        if(file) { const r = new FileReader(); r.onload=()=>push(r.result); r.readAsDataURL(file); } else if(t) push();
+    window.openChat = (uid, name) => {
+        actChat = me.uid < uid ? me.uid+uid : uid+me.uid;
+        document.getElementById('c-name').innerText = name;
+        document.getElementById('chat-win').style.display = 'flex';
+        db.ref('chats/'+actChat).on('value', s => {
+            const mBox = document.getElementById('msgs'); mBox.innerHTML = '<div class="enc-mark">🔒 End-to-End Encrypted</div>';
+            s.forEach(x => {
+                const m = x.val(); let h = `<div class="bubble ${m.s===me.uid?'me':'them'}" oncontextmenu="delM('${x.key}');return false">`;
+                if(m.ty === 'voice' || m.ty === 'audio') h += `<audio controls src="${m.c}"></audio>`;
+                else if(m.ty === 'video') h += `<video controls src="${m.c}"></video>`;
+                else h += m.t;
+                mBox.innerHTML += h + `</div>`;
+            });
+            mBox.scrollTop = mBox.scrollHeight;
+        });
     };
 
-    window.logout = () => { if(confirm("TERMINATE SESSION?")) auth.signOut().then(()=>location.reload()); };
+    window.sendM = (ty, input) => {
+        if(ty === 'text') {
+            const t = document.getElementById('mInp').value;
+            if(t) db.ref('chats/'+actChat).push({ s: me.uid, t: t, ty: 'text' });
+            document.getElementById('mInp').value = "";
+        } else {
+            const r = new FileReader(); r.onload = e => db.ref('chats/'+actChat).push({ s: me.uid, c: e.target.result, ty: ty });
+            r.readAsDataURL(input.files[0]);
+        }
+    };
+
+    // Voice Note Logic
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRec = new MediaRecorder(stream);
+        mediaRec.ondataavailable = e => audioChunks.push(e.data);
+        mediaRec.onstop = () => {
+            const blob = new Blob(audioChunks, { type: 'audio/mp3' });
+            const r = new FileReader(); r.onload = e => db.ref('chats/'+actChat).push({ s: me.uid, c: e.target.result, ty: 'voice' });
+            r.readAsDataURL(blob); audioChunks = [];
+        };
+    });
+    document.getElementById('recBtn').onmousedown = () => mediaRec.start();
+    document.getElementById('recBtn').onmouseup = () => mediaRec.stop();
+
+    window.sendP = () => {
+        const t = document.getElementById('pTxt').value, o1 = document.getElementById('opt1').value, o2 = document.getElementById('opt2').value;
+        if(t) { db.ref('posts').push({ uid: me.uid, n: me.displayName, t: t, opt1: o1, opt2: o2 }); document.getElementById('pTxt').value = ""; }
+    };
+
     window.closeChat = () => document.getElementById('chat-win').style.display = 'none';
-    window.preImg = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>document.getElementById('pPre').innerHTML=`<img src="${e.target.result}" style="width:100%; border-radius:10px;">`; r.readAsDataURL(i.files[0]); } };
-    window.upStory = (i) => { if(i.files[0]) { const r = new FileReader(); r.onload=e=>db.ref('stories/'+me.uid).set({img: e.target.result}); r.readAsDataURL(i.files[0]); } };
+    window.logout = () => { if(confirm("Logout?")) auth.signOut().then(() => location.reload()); };
 </script>
 </body>
 </html>
