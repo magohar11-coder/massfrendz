@@ -191,6 +191,27 @@
         <b>${name}</b>
         <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span>
     </div>
+    window.sendAdvancedMedia = (cID, input) => {
+    const file = input.files[0];
+    const isViewOnce = document.getElementById('view-once-' + cID).checked;
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            let type = file.type.startsWith('video') ? 'video' : (file.type.startsWith('audio') ? 'audio' : 'img');
+            db.ref('msgs/' + cID).push({
+                s: me.uid,
+                t: e.target.result, // Media data
+                type: type,
+                once: isViewOnce,
+                viewed: false,
+                ts: Date.now()
+            });
+            // Bhejne ke baad tick hata do
+            document.getElementById('view-once-' + cID).checked = false; 
+        };
+        reader.readAsDataURL(file);
+    }
+};
     <div id="msgs-${chatID}" class="chat-msgs-area"></div>
     <div class="chat-input-area">
         <label title="One-time View" style="cursor:pointer; font-size: 18px;">
@@ -254,4 +275,5 @@
 </script>
 </body>
 </html>
+
 
