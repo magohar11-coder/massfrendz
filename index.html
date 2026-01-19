@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Massfrendz | Gohar Pro</title>
+    <title>Massfrendz | M.A. Gohar Final</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <style>
         :root { --main: #00c853; --bg: #f0f2f5; --card: #ffffff; --text: #1c1e21; --gray: #65676b; }
         [data-theme="dark"] { --bg: #18191a; --card: #242526; --text: #e4e6eb; --gray: #b0b3b8; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-top: 60px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-top: 60px; overflow-x: hidden; }
 
+        /* Nav & Layout */
         nav { position: fixed; top: 0; width: 100%; background: var(--card); display: flex; align-items: center; padding: 0 15px; height: 56px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000; box-sizing: border-box; }
         .nav-left { flex: 1; display: flex; align-items: center; gap: 10px; }
         .search-box { background: var(--bg); border-radius: 20px; padding: 8px 15px; display: flex; align-items: center; width: 220px; }
         .search-box input { border: none; background: none; outline: none; color: var(--text); width: 100%; }
-
-        .nav-right { display: flex; gap: 12px; align-items: center; }
-        .n-icon { width: 40px; height: 40px; background: #e4e6eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; border: none; }
-        [data-theme="dark"] .n-icon { background: #3a3b3c; color: white; }
+        .nav-right { display: flex; gap: 12px; }
+        .n-icon { width: 40px; height: 40px; background: #e4e6eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-size: 18px; }
 
         .grid-container { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: auto; padding: 0 15px; }
         @media (max-width: 1100px) { .grid-container { grid-template-columns: 1fr; } .sidebar, .right-bar { display: none; } }
 
-        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .sidebar-item:hover { background: rgba(0,0,0,0.05); }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post-img { width: 100%; border-radius: 10px; margin-top: 10px; }
+        
+        /* Chat Window Overlay */
+        #chat-win { position: fixed; bottom: 0; right: 20px; width: 320px; height: 400px; background: var(--card); border-radius: 10px 10px 0 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 3000; }
+        @media (max-width: 600px) { #chat-win { width: 100%; height: 100%; right: 0; border-radius: 0; } }
+        #msgs { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 8px 12px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .msg.me { align-self: flex-end; background: var(--main); color: white; }
+        .msg.them { align-self: flex-start; background: var(--bg); }
 
-        .reward-card { background: var(--card); border-radius: 10px; padding: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .milestone { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; font-weight: bold; }
-        .m-dot { width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; }
-
-        #posts-container { margin-top: 20px; }
-        .post-card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .badge { font-size: 10px; padding: 3px 8px; border-radius: 12px; color: white; font-weight: 800; }
+        .badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; color: white; font-weight: bold; }
     </style>
 </head>
 <body data-theme="light">
@@ -41,50 +42,61 @@
 <nav>
     <div class="nav-left">
         <div style="color:var(--main); font-weight:900; font-size:26px; cursor:pointer;" onclick="location.reload()">M</div>
-        <div class="search-box">
-            <input type="text" id="sInp" placeholder="Search friends..." oninput="searchUsers(this.value)">
-        </div>
+        <div class="search-box"><input type="text" placeholder="Search Massfrendz..." oninput="searchUsers(this.value)"></div>
     </div>
     <div class="nav-right">
         <button class="n-icon" onclick="location.reload()">🏠</button>
-        <button class="n-icon" onclick="alert('Profile system in Part 3')">👥</button>
+        <button class="n-icon" onclick="showFriends()">👥</button>
         <button class="n-icon" onclick="toggleTheme()">🌓</button>
-        <img id="user-dp" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--main); cursor:pointer;" onclick="logout()">
+        <img id="user-dp" onclick="logout()" style="width:38px; height:38px; border-radius:50%; border:2px solid var(--main); cursor:pointer;">
     </div>
 </nav>
 
 <div class="grid-container">
     <div class="sidebar">
-        <div class="sidebar-item"><img id="side-dp" style="width:36px; border-radius:50%;"> <b id="side-name">Loading...</b></div>
-        <div class="sidebar-item">💎 <span>VIP Center</span></div>
-        <div class="sidebar-item">⚙️ <span>Settings</span></div>
-        <hr style="opacity:0.1">
-        <p style="font-size:12px; color:var(--gray); padding:10px;">Powered by M.A. Gohar</p>
+        <div class="card" id="my-profile">
+            <img id="side-dp" style="width:50px; border-radius:50%;">
+            <h4 id="side-name" style="margin:10px 0 5px 0;">...</h4>
+            <p style="font-size:12px; color:var(--gray);">Verified Massfrendz User</p>
+        </div>
+        <div class="card" style="font-size: 14px; cursor: pointer;" onclick="showFriends()">🤝 My Friends List</div>
     </div>
 
     <div class="feed-area">
-        <div class="reward-card">
+        <div class="card">
             <div style="display:flex; gap:10px;">
                 <img id="post-dp" style="width:40px; height:40px; border-radius:50%;">
-                <input type="text" id="pInp" placeholder="Share your thoughts, Gohar..." style="flex:1; border:none; background:var(--bg); border-radius:25px; padding:0 15px; outline:none; color:var(--text);">
+                <textarea id="pInp" placeholder="What's on your mind, Gohar?" style="flex:1; border:none; background:var(--bg); border-radius:15px; padding:10px; outline:none; resize:none;"></textarea>
             </div>
-            <div id="pre-img-box" style="display:none; margin-top:10px;"><img id="pImgPre" style="width:100px; border-radius:8px;"></div>
-            <hr style="opacity:0.05; margin:15px 0;">
-            <div style="display:flex; justify-content:space-around; align-items:center;">
-                <label style="cursor:pointer; color:var(--gray);">🖼️ Photo <input type="file" accept="image/*" hidden onchange="preView(this)"></label>
-                <button onclick="sendP()" style="background:var(--main); color:white; border:none; padding:6px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">Post Now</button>
+            <div id="pre-box" style="display:none; margin:10px;"><img id="pPre" style="width:80px; border-radius:5px;"></div>
+            <hr style="opacity:0.1">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label style="cursor:pointer; font-weight:bold; color:var(--gray);">🖼️ Photo <input type="file" accept="image/*" hidden onchange="pre(this)"></label>
+                <button onclick="sendP()" style="background:var(--main); color:white; border:none; padding:7px 20px; border-radius:20px; font-weight:bold;">POST</button>
             </div>
         </div>
-        <div id="posts-container"></div>
+        <div id="feed"></div>
     </div>
 
     <div class="right-bar">
-        <div class="reward-card">
-            <h4 style="margin:0 0 10px 0;">Milestones</h4>
-            <div class="milestone"><span class="m-dot" style="background:#b4b4b4">S</span> Silver: 0-50 Likes</div>
-            <div class="milestone"><span class="m-dot" style="background:#ffd700">G</span> Gold: 51-200 Likes</div>
-            <div class="milestone"><span class="m-dot" style="background:#00d2ff">D</span> DIAMOND: 200+</div>
+        <div class="card">
+            <h4 style="margin:0 0 10px 0;">Reward Levels</h4>
+            <p style="font-size:12px;">⚪ Silver (0-50) | 🟡 Gold (51-200) | 💎 Diamond (201+)</p>
+            <hr style="opacity:0.1">
+            <div id="online-friends">Loading friends...</div>
         </div>
+    </div>
+</div>
+
+<div id="chat-win">
+    <div style="padding:10px; background:var(--main); color:white; display:flex; justify-content:space-between; align-items:center; border-radius:10px 10px 0 0;">
+        <span id="c-name">Chat</span>
+        <button onclick="closeChat()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">×</button>
+    </div>
+    <div id="msgs"></div>
+    <div style="padding:10px; display:flex; gap:5px; border-top:1px solid #eee;">
+        <input type="text" id="mInp" placeholder="Type a message..." style="flex:1; border:none; background:var(--bg); padding:10px; border-radius:20px; outline:none;">
+        <button onclick="sendM()" style="border:none; background:none; font-size:20px; cursor:pointer;">🚀</button>
     </div>
 </div>
 
@@ -92,7 +104,7 @@
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
-    let me = null;
+    let me = null, activeRoom = null;
 
     auth.onAuthStateChanged(user => {
         if(user) {
@@ -101,81 +113,88 @@
             document.getElementById('side-dp').src = user.photoURL;
             document.getElementById('post-dp').src = user.photoURL;
             document.getElementById('side-name').innerText = user.displayName;
-            db.ref('users/' + user.uid).update({ n: user.displayName, p: user.photoURL });
+            db.ref('users/'+user.uid).update({n: user.displayName, p: user.photoURL, online: true});
             loadFeed();
-        } else {
-            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-        }
+            loadOnline();
+        } else { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     });
 
-    window.toggleTheme = () => { document.body.dataset.theme = document.body.dataset.theme === 'light' ? 'dark' : 'light'; };
-
-    window.preView = (input) => {
-        if(input.files[0]) {
-            const r = new FileReader();
-            r.onload = e => { 
-                document.getElementById('pImgPre').src = e.target.result;
-                document.getElementById('pre-img-box').style.display = 'block';
-            };
-            r.readAsDataURL(input.files[0]);
-        }
-    };
-
-    window.sendP = () => {
-        const txt = document.getElementById('pInp').value;
-        const img = document.getElementById('pImgPre').src;
-        const hasImg = document.getElementById('pre-img-box').style.display === 'block';
-        if(!txt && !hasImg) return;
-        db.ref('posts').push({
-            uid: me.uid, n: me.displayName, p: me.photoURL,
-            t: txt, i: hasImg ? img : "", likes: 0, ts: Date.now()
-        });
-        document.getElementById('pInp').value = "";
-        document.getElementById('pre-img-box').style.display = 'none';
-    };
-
     function loadFeed() {
-        db.ref('posts').on('value', s => {
-            const feed = document.getElementById('posts-container');
-            feed.innerHTML = "";
+        db.ref('posts').limitToLast(30).on('value', s => {
+            const f = document.getElementById('feed'); f.innerHTML = "";
             s.forEach(x => {
                 const p = x.val();
                 let b = "⚪ SILVER", c = "#b4b4b4";
                 if(p.likes > 200) { b = "💎 DIAMOND"; c = "#00d2ff"; }
                 else if(p.likes > 50) { b = "🟡 GOLD"; c = "#ffd700"; }
-
-                feed.innerHTML = `
-                <div class="post-card">
-                    <div style="display:flex; justify-content:space-between;">
-                        <div style="display:flex; gap:10px; align-items:center;">
+                
+                f.innerHTML = `<div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="openChat('${p.uid}','${p.n}')">
                             <img src="${p.p}" style="width:40px; border-radius:50%;">
                             <b>${p.n}</b>
                         </div>
                         <span class="badge" style="background:${c}">${b}</span>
                     </div>
-                    <p>${p.t}</p>
-                    ${p.i ? `<img src="${p.i}" style="width:100%; border-radius:8px;">` : ''}
+                    <p style="margin:15px 0;">${p.t}</p>
+                    ${p.i ? `<img src="${p.i}" class="post-img">` : ''}
                     <hr style="opacity:0.05">
                     <button onclick="like('${x.key}')" style="background:none; border:none; color:var(--main); font-weight:bold; cursor:pointer;">❤️ ${p.likes || 0} Likes</button>
-                </div>` + feed.innerHTML;
+                </div>` + f.innerHTML;
             });
         });
     }
 
-    window.like = (id) => db.ref('posts/'+id+'/likes').transaction(c => (c || 0) + 1);
+    window.openChat = (uid, name) => {
+        if(uid === me.uid) return;
+        activeRoom = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
+        document.getElementById('c-name').innerText = name;
+        document.getElementById('chat-win').style.display = 'flex';
+        db.ref('chats/'+activeRoom).off();
+        db.ref('chats/'+activeRoom).on('value', s => {
+            const mBox = document.getElementById('msgs'); mBox.innerHTML = "";
+            s.forEach(x => {
+                const m = x.val();
+                mBox.innerHTML += `<div class="msg ${m.s===me.uid?'me':'them'}">${m.t}</div>`;
+            });
+            mBox.scrollTop = mBox.scrollHeight;
+        });
+    };
+
+    window.sendM = () => {
+        const t = document.getElementById('mInp').value;
+        if(t) db.ref('chats/'+activeRoom).push({s: me.uid, t: t, ts: Date.now()});
+        document.getElementById('mInp').value = "";
+    };
+
+    window.sendP = () => {
+        const t = document.getElementById('pInp').value, i = document.getElementById('pPre').src;
+        const hasImg = document.getElementById('pre-box').style.display === 'block';
+        if(t || hasImg) db.ref('posts').push({uid: me.uid, n: me.displayName, p: me.photoURL, t: t, i: hasImg?i:'', likes:0, ts: Date.now()});
+        document.getElementById('pInp').value = ""; document.getElementById('pre-box').style.display = 'none';
+    };
 
     window.searchUsers = (v) => {
         if(!v) { loadFeed(); return; }
         db.ref('users').orderByChild('n').startAt(v).endAt(v+"\uf8ff").once('value', s => {
-            const feed = document.getElementById('posts-container');
-            feed.innerHTML = "<h3>Search Results:</h3>";
-            s.forEach(u => {
-                feed.innerHTML += `<div class="sidebar-item" onclick="alert('Profile of ${u.val().n}')"><img src="${u.val().p}" style="width:30px; border-radius:50%;"> ${u.val().n}</div>`;
-            });
+            const f = document.getElementById('feed'); f.innerHTML = "<h4>Search Results</h4>";
+            s.forEach(u => f.innerHTML += `<div class="card" onclick="openChat('${u.key}','${u.val().n}')">👤 ${u.val().n}</div>`);
         });
     };
 
+    function loadOnline() {
+        db.ref('users').limitToLast(10).on('value', s => {
+            const o = document.getElementById('online-friends'); o.innerHTML = "<b>Who's Online</b><br>";
+            s.forEach(u => { if(u.key !== me.uid) o.innerHTML += `<p style="cursor:pointer;" onclick="openChat('${u.key}','${u.val().n}')">🟢 ${u.val().n}</p>`; });
+        });
+    }
+
+    window.pre = (input) => { if(input.files[0]) { const r = new FileReader(); r.onload=e=>{document.getElementById('pPre').src=e.target.result; document.getElementById('pre-box').style.display='block';}; r.readAsDataURL(input.files[0]); } };
+    window.toggleTheme = () => document.body.dataset.theme = document.body.dataset.theme === 'light' ? 'dark' : 'light';
+    window.closeChat = () => document.getElementById('chat-win').style.display = 'none';
+    window.like = (id) => db.ref('posts/'+id+'/likes').transaction(c => (c || 0) + 1);
     window.logout = () => { if(confirm("Logout?")) auth.signOut().then(()=>location.reload()); };
+    window.showFriends = () => alert("Friends system is now live! Click any name to start chatting.");
 </script>
 </body>
 </html>
