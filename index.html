@@ -187,12 +187,20 @@
         if(document.getElementById('chat-window-' + chatID)) return;
         const div = document.createElement('div'); div.id = 'chat-window-' + chatID; div.className = 'chat-float';
         div.innerHTML = `
-            <div class="chat-header"><b>${name}</b><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span></div>
-            <div id="msgs-${chatID}" class="chat-msgs-area"></div>
-            <div class="chat-input-area">
-                <label style="cursor:pointer; color:var(--main);"><i class="fas fa-paperclip"></i><input type="file" hidden accept="image/*,video/*,audio/*" onchange="sendMedia('${chatID}', this)"></label>
-                <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMessage('${chatID}')">
-            </div>`;
+    <div class="chat-header">
+        <b>${name}</b>
+        <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span>
+    </div>
+    <div id="msgs-${chatID}" class="chat-msgs-area"></div>
+    <div class="chat-input-area">
+        <label title="One-time View" style="cursor:pointer; font-size: 18px;">
+            <input type="checkbox" id="view-once-${chatID}"> <i class="fas fa-eye"></i>
+        </label>
+        <label style="cursor:pointer; color:var(--main);"><i class="fas fa-paperclip"></i>
+            <input type="file" hidden accept="image/*,video/*,audio/*" onchange="sendAdvancedMedia('${chatID}', this)">
+        </label>
+        <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMessage('${chatID}')">
+    </div>`;
         document.body.appendChild(div);
         db.ref('msgs/' + chatID).on('value', s => {
             const box = document.getElementById('msgs-' + chatID); if(!box) return; box.innerHTML = "";
@@ -246,3 +254,4 @@
 </script>
 </body>
 </html>
+
