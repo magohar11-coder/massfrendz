@@ -188,30 +188,21 @@
         const div = document.createElement('div'); div.id = 'chat-window-' + chatID; div.className = 'chat-float';
         div.innerHTML = `
     <div class="chat-header">
-        <b>${name}</b>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <img src="${img}" style="width:24px; height:24px; border-radius:50%;">
+            <b style="font-size:14px;">${name}</b>
+        </div>
         <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span>
     </div>
-    window.sendAdvancedMedia = (cID, input) => {
-    const file = input.files[0];
-    const isViewOnce = document.getElementById('view-once-' + cID).checked;
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            let type = file.type.startsWith('video') ? 'video' : (file.type.startsWith('audio') ? 'audio' : 'img');
-            db.ref('msgs/' + cID).push({
-                s: me.uid,
-                t: e.target.result, // Media data
-                type: type,
-                once: isViewOnce,
-                viewed: false,
-                ts: Date.now()
-            });
-            // Bhejne ke baad tick hata do
-            document.getElementById('view-once-' + cID).checked = false; 
-        };
-        reader.readAsDataURL(file);
-    }
-};
+    <div id="msgs-${chatID}" class="chat-msgs-area"></div>
+    <div class="chat-input-area" style="display:flex; align-items:center; gap:5px; padding:5px;">
+        <input type="checkbox" id="view-once-${chatID}" title="View Once">
+        <label style="cursor:pointer; color:var(--main);">
+            <i class="fas fa-paperclip"></i>
+            <input type="file" hidden accept="image/*,video/*,audio/*" onchange="sendAdvancedMedia('${chatID}', this)">
+        </label>
+        <input type="text" id="input-${chatID}" style="flex:1;" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMessage('${chatID}')">
+    </div>`;
     <div id="msgs-${chatID}" class="chat-msgs-area"></div>
     <div class="chat-input-area">
         <label title="One-time View" style="cursor:pointer; font-size: 18px;">
@@ -275,5 +266,6 @@
 </script>
 </body>
 </html>
+
 
 
