@@ -105,6 +105,7 @@
     }
 
     // --- CHAT LOGIC ---
+   // --- CHAT LOGIC (Fully Corrected) ---
     window.openChat = (uid, name, img) => {
         if(uid === me.uid) return;
         const chatID = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
@@ -140,15 +141,14 @@
                 const msgDiv = document.createElement('div');
                 msgDiv.style = `padding:8px 12px; border-radius:15px; margin:2px; background:${isMe?'var(--main)':'#e4e6e9'}; color:${isMe?'white':'black'}; align-self:${isMe?'flex-end':'flex-start'}; max-width:85%; font-size:14px; cursor:pointer; position:relative;`;
 
-                // One-time View & Media Display
                 if (d.once && d.viewed && !isMe) {
                     msgDiv.innerHTML = "<i><i class='fas fa-eye-slash'></i> Media Viewed</i>";
                 } else {
                     if(d.type === 'img') {
-                        msgDiv.innerHTML = `<img src="${d.t}" style="width:100%; border-radius:10px;">`;
+                        msgDiv.innerHTML = `<img src="${d.t}" style="width:100%; max-width:200px; border-radius:10px; display:block;">`;
                         if(d.once && !isMe && !d.viewed) setTimeout(() => db.ref('msgs/'+chatID+'/'+m.key).update({viewed:true}), 5000);
                     } else if(d.type === 'video') {
-                        msgDiv.innerHTML = `<video src="${d.t}" controls style="width:100%; border-radius:10px;"></video>`;
+                        msgDiv.innerHTML = `<video src="${d.t}" controls style="width:100%; max-width:200px; border-radius:10px;"></video>`;
                     } else if(d.type === 'audio') {
                         msgDiv.innerHTML = `<audio src="${d.t}" controls style="width:180px;"></audio>`;
                     } else {
@@ -156,20 +156,17 @@
                     }
                 }
 
-                // Delete Options
                 msgDiv.onclick = () => {
                     const choice = prompt("1. Delete for Me\n2. Delete for Everyone");
                     if(choice === "1") msgDiv.remove();
                     else if(choice === "2" && isMe) db.ref('msgs/'+chatID+'/'+m.key).remove();
                     else if(choice === "2") alert("You can only unsend your own messages!");
                 };
-
                 box.appendChild(msgDiv);
             });
             box.scrollTop = box.scrollHeight;
         });
-    };
-
+    }; // Bracket ab sahi jagah hai!
     window.sendTextMessage = (cID) => {
         const inp = document.getElementById('input-' + cID);
         if(inp.value) {
@@ -238,3 +235,4 @@
 </script>
 </body>
 </html>
+
