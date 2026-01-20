@@ -12,27 +12,19 @@
     <style>
         :root { --main: #00c853; --fb-blue: #1877f2; --bg: #f0f2f5; }
         body { background: var(--bg); font-family: 'Segoe UI', Arial; margin: 0; }
-        
-        /* Navbar with Search and Bell */
         nav { position: fixed; top: 0; width: 100%; height: 56px; background: white; border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1000; box-sizing: border-box; }
         .nav-left { display: flex; align-items: center; gap: 10px; flex: 1; }
         .search-box { background: #f0f2f5; border-radius: 20px; padding: 5px 12px; display: flex; align-items: center; width: 200px; }
         .search-box input { border: none; background: transparent; outline: none; padding-left: 5px; width: 100%; }
-        
         .nav-right { display: flex; align-items: center; gap: 20px; }
         .notif-bell { position: relative; cursor: pointer; font-size: 20px; color: #65676b; }
         .notif-count { position: absolute; top: -5px; right: -5px; background: red; color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; display: none; }
-
         .main-content { margin-top: 70px; display: flex; justify-content: center; gap: 20px; }
         .feed { width: 100%; max-width: 500px; padding: 10px; }
         .card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 15px; }
-
-        /* Notification Dropdown */
         .notif-dropdown { position: absolute; top: 50px; right: 20px; width: 300px; background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-radius: 8px; display: none; flex-direction: column; padding: 10px; z-index: 3000; }
         .req-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
         .req-btn { padding: 4px 10px; border-radius: 5px; border: none; cursor: pointer; font-size: 12px; }
-
-        /* Chat & Others stay same... */
         .chat-window { position: fixed; bottom: 0; right: 20px; width: 330px; height: 450px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 12px 28px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
         .chat-header { background: white; border-bottom: 1px solid #ddd; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
         .action-bar { background: var(--fb-blue); color: white; padding: 8px 12px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
@@ -70,24 +62,21 @@
             <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor:pointer;"></i>
         </div>
     </nav>
-
     <div id="notif-box" class="notif-dropdown">
-        <b style="padding: 5px;">Friend Requests</b>
+        <b>Friend Requests</b>
         <div id="req-list"></div>
     </div>
-
     <div class="main-content">
         <div class="feed">
             <div id="search-results" class="card" style="display:none;">
                 <b>Search Results</b>
                 <div id="results-list"></div>
             </div>
-
             <div class="card">
-                <textarea id="post-text" placeholder="What's on your mind?" style="width:100%; border:none; background:#f0f2f5; padding:10px; border-radius:8px; outline:none; resize:none;"></textarea>
+                <textarea id="post-text" placeholder="What's on your mind?"></textarea>
                 <img id="post-img-prev" style="width:100%; border-radius:8px; display:none; margin-top:10px;">
                 <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <label style="color:var(--main); cursor:pointer;"><i class="fas fa-image"></i> Photo/Video <input type="file" id="post-file" hidden onchange="previewFile(this, 'post-img-prev')"></label>
+                    <label style="color:var(--main); cursor:pointer;"><i class="fas fa-image"></i> Photo <input type="file" id="post-file" hidden onchange="previewFile(this, 'post-img-prev')"></label>
                     <button id="post-btn" onclick="submitPost()" style="background:var(--main); color:white; border:none; padding:8px 20px; border-radius:5px; cursor:pointer;">Post</button>
                 </div>
             </div>
@@ -100,10 +89,10 @@
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
-
-    let me = null;
-    let selectedMsgs = {};
-    let postMediaData = "";
+    
+    // Audio alert
+    const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+    let me = null; let selectedMsgs = {}; let postMediaData = "";
 
     auth.onAuthStateChanged(user => {
         if(user) {
@@ -111,62 +100,42 @@
             document.getElementById('login-screen').style.display='none';
             document.getElementById('main-app').style.display='block';
             db.ref('users/'+user.uid).update({n:user.displayName, p:user.photoURL});
-            loadPosts();
-            listenRequests();
+            loadPosts(); listenRequests();
+            if (Notification.permission !== "granted") Notification.requestPermission();
         }
     });
 
     function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     function logout() { auth.signOut().then(() => location.reload()); }
 
-    // --- SEARCH LOGIC ---
     function searchUsers(val) {
         const box = document.getElementById('search-results');
         const list = document.getElementById('results-list');
         if(val.length < 1) { box.style.display = 'none'; return; }
-        
         db.ref('users').once('value', s => {
-            list.innerHTML = "";
-            let found = false;
+            list.innerHTML = ""; let found = false;
             s.forEach(u => {
                 if(u.val().n.toLowerCase().includes(val.toLowerCase()) && u.key !== me.uid) {
                     found = true;
-                    list.innerHTML += `
-                        <div class="req-item">
-                            <span>${u.val().n}</span>
-                            <button class="req-btn" style="background:var(--fb-blue); color:white;" onclick="sendRequest('${u.key}','${u.val().n}')">Add Friend</button>
-                        </div>`;
+                    list.innerHTML += `<div class="req-item"><span>${u.val().n}</span><button class="req-btn" style="background:var(--fb-blue); color:white;" onclick="sendRequest('${u.key}','${u.val().n}')">Add Friend</button></div>`;
                 }
             });
             box.style.display = found ? 'block' : 'none';
         });
     }
 
-    // --- FRIEND REQUESTS LOGIC ---
-    function sendRequest(uid, name) {
-        db.ref('requests/' + uid + '/' + me.uid).set({ n: me.displayName, p: me.photoURL });
-        alert("Request sent to " + name);
-    }
+    function sendRequest(uid, name) { db.ref('requests/' + uid + '/' + me.uid).set({ n: me.displayName, p: me.photoURL }); alert("Sent!"); }
 
     function listenRequests() {
         db.ref('requests/' + me.uid).on('value', s => {
             const list = document.getElementById('req-list');
             const count = document.getElementById('bell-count');
-            list.innerHTML = "";
-            let c = 0;
+            list.innerHTML = ""; let c = 0;
             s.forEach(r => {
                 c++;
-                list.innerHTML += `
-                    <div class="req-item">
-                        <span>${r.val().n}</span>
-                        <div>
-                            <button class="req-btn" style="background:var(--main); color:white;" onclick="acceptReq('${r.key}','${r.val().n}')">Confirm</button>
-                            <button class="req-btn" style="background:#ddd;" onclick="deleteReq('${r.key}')">Delete</button>
-                        </div>
-                    </div>`;
+                list.innerHTML += `<div class="req-item"><span>${r.val().n}</span><div><button class="req-btn" style="background:var(--main); color:white;" onclick="acceptReq('${r.key}','${r.val().n}')">Confirm</button><button class="req-btn" style="background:#ddd;" onclick="deleteReq('${r.key}')">Delete</button></div></div>`;
             });
-            count.innerText = c;
-            count.style.display = c > 0 ? 'block' : 'none';
+            count.innerText = c; count.style.display = c > 0 ? 'block' : 'none';
         });
     }
 
@@ -174,21 +143,14 @@
         db.ref('friends/' + me.uid + '/' + uid).set(true);
         db.ref('friends/' + uid + '/' + me.uid).set(true);
         deleteReq(uid);
-        alert("You are now friends with " + name);
     }
-
     function deleteReq(uid) { db.ref('requests/' + me.uid + '/' + uid).remove(); }
+    function toggleNotif() { const box = document.getElementById('notif-box'); box.style.display = box.style.display === 'flex' ? 'none' : 'flex'; }
 
-    function toggleNotif() {
-        const box = document.getElementById('notif-box');
-        box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
-    }
-
-    // --- PREVIOUS LOGIC (Post & Chat) ---
     function previewFile(input, targetID) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = e => { postMediaData = e.target.result; const prev = document.getElementById(targetID); prev.src = e.target.result; prev.style.display = 'block'; };
+            reader.onload = e => { postMediaData = e.target.result; document.getElementById(targetID).src = e.target.result; document.getElementById(targetID).style.display = 'block'; };
             reader.readAsDataURL(input.files[0]);
         }
     }
@@ -196,14 +158,8 @@
     function submitPost() {
         let t = document.getElementById('post-text').value;
         if(!t && !postMediaData) return;
-        document.getElementById('post-btn').innerText = "Posting...";
         db.ref('posts').push({uid:me.uid, n:me.displayName, p:me.photoURL, t:t, img:postMediaData, ts:Date.now()})
-        .then(() => {
-            document.getElementById('post-text').value = "";
-            document.getElementById('post-img-prev').style.display = 'none';
-            postMediaData = "";
-            document.getElementById('post-btn').innerText = "Post";
-        });
+        .then(() => { document.getElementById('post-text').value = ""; document.getElementById('post-img-prev').style.display = 'none'; postMediaData = ""; });
     }
 
     function loadPosts() {
@@ -211,10 +167,7 @@
             const list = document.getElementById('post-list'); list.innerHTML = "";
             s.forEach(x => {
                 let p = x.val();
-                list.innerHTML = `<div class="card">
-                    <b>${p.n}</b><p>${p.t}</p>${p.img ? `<img src="${p.img}" class="post-img">` : ''}
-                    <button onclick="openChat('${p.uid}','${p.n}')" style="margin-top:10px; background:none; border:1px solid #ddd; padding:5px; cursor:pointer; border-radius:4px;">Message</button>
-                </div>` + list.innerHTML;
+                list.innerHTML = `<div class="card"><b>${p.n}</b><p>${p.t}</p>${p.img ? `<img src="${p.img}" class="post-img">` : ''}<button onclick="openChat('${p.uid}','${p.n}')" style="margin-top:10px; background:none; border:1px solid #ddd; padding:5px; cursor:pointer; border-radius:4px;">Message</button></div>` + list.innerHTML;
             });
         });
     }
@@ -225,8 +178,10 @@
         selectedMsgs[chatID] = [];
         let win = document.createElement('div');
         win.id = 'win-'+chatID; win.className = 'chat-window';
-        win.innerHTML = `<div id="bar-${chatID}" class="action-bar"><span id="count-${chatID}">0 Selected</span><div style="display:flex; gap:8px;"><span onclick="handleUnsend('${chatID}')">Unsend</span></div></div><div class="chat-header"><b>${name}</b><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span></div><div id="body-${chatID}" class="chat-body"></div><div class="chat-footer"><label><i class="fas fa-paperclip"></i><input type="file" hidden onchange="sendMediaChat('${chatID}', this)"></label><input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')"></div>`;
+        win.innerHTML = `<div id="bar-${chatID}" class="action-bar"><span id="count-${chatID}">0 Selected</span><span onclick="handleUnsend('${chatID}')">Unsend</span></div><div class="chat-header"><b>${name}</b><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span></div><div id="body-${chatID}" class="chat-body"></div><div class="chat-footer"><label><i class="fas fa-paperclip"></i><input type="file" hidden onchange="sendMediaChat('${chatID}', this)"></label><input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')"></div>`;
         document.body.appendChild(win);
+        
+        let firstLoad = true;
         db.ref('msgs/'+chatID).on('value', s => {
             let body = document.getElementById('body-'+chatID); if(!body) return;
             body.innerHTML = "";
@@ -239,6 +194,18 @@
                 body.appendChild(mDiv);
             });
             body.scrollTop = body.scrollHeight;
+
+            // Notification & Sound Logic
+            if(!firstLoad) {
+                let lastMsg = Object.values(s.val()).pop();
+                if(lastMsg.s !== me.uid) {
+                    msgSound.play();
+                    if(document.hidden) {
+                        new Notification("New Message from " + name, { body: lastMsg.type === 'media' ? "Sent a photo" : lastMsg.t });
+                    }
+                }
+            }
+            firstLoad = false;
         });
     }
 
@@ -268,4 +235,4 @@
     }
 </script>
 </body>
-</html>9
+</html>
