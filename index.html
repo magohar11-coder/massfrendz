@@ -24,12 +24,12 @@
         .post-img-content { width: 100%; max-height: 500px; object-fit: contain; border-radius: 4px; margin-top: 10px; background: #f0f2f5; }
         .btn-post { background: var(--main); color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
         .online-panel { position: fixed; right: 0; top: 56px; width: 300px; height: calc(100vh - 56px); padding: 16px; border-left: 1px solid #ddd; background: var(--bg); overflow-y: auto; }
-        .chat-float { position: fixed; bottom: 0; right: 320px; width: 300px; height: 380px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
+        .chat-float { position: fixed; bottom: 0; right: 320px; width: 300px; height: 400px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
         .chat-header { background: var(--main); color: white; padding: 10px; display: flex; justify-content: space-between; border-radius: 8px 8px 0 0; align-items: center; }
         .chat-msgs-area { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #f9f9f9; }
-        .chat-input-area { padding: 8px; border-top: 1px solid #eee; display: flex; gap: 8px; align-items: center; }
-        .chat-input-area input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 15px; outline: none; }
-        @media (max-width: 900px) { .sidebar, .online-panel { display: none; } .main-content { margin: 70px 10px; } }
+        .chat-input-area { padding: 8px; border-top: 1px solid #eee; display: flex; gap: 8px; align-items: center; background: white; }
+        .chat-input-area input[type="text"] { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 15px; outline: none; }
+        @media (max-width: 900px) { .sidebar, .online-panel { display: none; } .main-content { margin: 70px 10px; } .chat-float { right: 10px; width: 90%; } }
     </style>
 </head>
 <body>
@@ -85,10 +85,15 @@
 </div>
 
 <script>
+    // Firebase Config
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
-    let me = null; let selectedPostImg = "";
+    
+    let me = null; 
+    let selectedPostImg = "";
+    let mediaRecorder; 
+    let audioChunks = [];
 
     auth.onAuthStateChanged(user => {
         if(user) {
@@ -100,12 +105,13 @@
 
     function updateProfileUI() {
         const dp = me.photoURL || 'https://via.placeholder.com/40';
-        document.getElementById('user-avatar').src = dp; document.getElementById('side-dp').src = dp;
-        document.getElementById('post-avatar').src = dp; document.getElementById('side-name').innerText = me.displayName;
+        document.getElementById('user-avatar').src = dp; 
+        document.getElementById('side-dp').src = dp;
+        document.getElementById('post-avatar').src = dp; 
+        document.getElementById('side-name').innerText = me.displayName;
     }
 
     // --- CHAT LOGIC ---
-   // --- CHAT LOGIC (Fully Corrected) ---
     window.openChat = (uid, name, img) => {
         if(uid === me.uid) return;
         const chatID = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
@@ -124,23 +130,15 @@
             </div>
             <div id="msgs-${chatID}" class="chat-msgs-area"></div>
             <div class="chat-input-area">
-    <input type="checkbox" id="view-once-${chatID}" title="One-time View"> 
-    <i class="fas fa-eye" style="font-size:12px; color:gray;"></i>
-    
-    <label style="cursor:pointer; color:var(--main); margin: 0 5px;">
-        <i class="fas fa-paperclip"></i>
-        <input type="file" hidden accept="image/*,video/*,audio/*" onchange="window.sendAdvancedMedia('${chatID}', this)">
-    </label>
-
-    <i class="fas fa-microphone" id="mic-${chatID}" 
-       style="cursor:pointer; color:var(--main); margin: 0 5px;" 
-       onmousedown="startRecording('${chatID}')" 
-       onmouseup="stopRecording('${chatID}')"
-       ontouchstart="startRecording('${chatID}')" 
-       ontouchend="stopRecording('${chatID}')"></i>
-
-    <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendTextMessage('${chatID}')">
-</div>
+                <input type="checkbox" id="view-once-${chatID}" title="View Once"> 
+                <i class="fas fa-eye" style="font-size:12px; color:gray;"></i>
+                <label style="cursor:pointer; color:var(--main);">
+                    <i class="fas fa-paperclip"></i>
+                    <input type="file" hidden accept="image/*,video/*,audio/*" onchange="window.sendAdvancedMedia('${chatID}', this)">
+                </label>
+                <i class="fas fa-microphone" id="mic-${chatID}" style="cursor:pointer; color:var(--main);" onmousedown="startRecording('${chatID}')" onmouseup="stopRecording('${chatID}')" ontouchstart="startRecording('${chatID}')" ontouchend="stopRecording('${chatID}')"></i>
+                <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendTextMessage('${chatID}')">
+            </div>`;
         document.body.appendChild(div);
 
         db.ref('msgs/' + chatID).on('value', s => {
@@ -149,37 +147,33 @@
             s.forEach(m => {
                 const d = m.val(); const isMe = d.s === me.uid;
                 const msgDiv = document.createElement('div');
-                msgDiv.style = `padding:8px 12px; border-radius:15px; margin:2px; background:${isMe?'var(--main)':'#e4e6e9'}; color:${isMe?'white':'black'}; align-self:${isMe?'flex-end':'flex-start'}; max-width:85%; font-size:14px; cursor:pointer; position:relative;`;
+                msgDiv.style = `padding:8px 12px; border-radius:15px; margin:2px; background:${isMe?'var(--main)':'#e4e6e9'}; color:${isMe?'white':'black'}; align-self:${isMe?'flex-end':'flex-start'}; max-width:85%; font-size:14px; position:relative;`;
 
                 if (d.once && d.viewed && !isMe) {
                     msgDiv.innerHTML = "<i><i class='fas fa-eye-slash'></i> Media Viewed</i>";
                 } else {
-                    if(d.type === 'img') {
-                        msgDiv.innerHTML = `<img src="${d.t}" style="width:100%; max-width:200px; border-radius:10px; display:block;">`;
-                        if(d.once && !isMe && !d.viewed) setTimeout(() => db.ref('msgs/'+chatID+'/'+m.key).update({viewed:true}), 5000);
-                    } else if(d.type === 'video') {
-                        msgDiv.innerHTML = `<video src="${d.t}" controls style="width:100%; max-width:200px; border-radius:10px;"></video>`;
-                    } else if(d.type === 'audio') {
-                        msgDiv.innerHTML = `<audio src="${d.t}" controls style="width:180px;"></audio>`;
-                    } else {
-                        msgDiv.innerText = d.t;
-                    }
+                    if(d.type === 'img') msgDiv.innerHTML = `<img src="${d.t}" style="width:100%; max-width:200px; border-radius:10px; display:block;">`;
+                    else if(d.type === 'video') msgDiv.innerHTML = `<video src="${d.t}" controls style="width:100%; max-width:200px; border-radius:10px;"></video>`;
+                    else if(d.type === 'audio') msgDiv.innerHTML = `<audio src="${d.t}" controls style="width:180px;"></audio>`;
+                    else msgDiv.innerText = d.t;
+                    
+                    if(d.once && !isMe && !d.viewed) setTimeout(() => db.ref('msgs/'+chatID+'/'+m.key).update({viewed:true}), 5000);
                 }
 
                 msgDiv.onclick = () => {
                     const choice = prompt("1. Delete for Me\n2. Delete for Everyone");
                     if(choice === "1") msgDiv.remove();
                     else if(choice === "2" && isMe) db.ref('msgs/'+chatID+'/'+m.key).remove();
-                    else if(choice === "2") alert("You can only unsend your own messages!");
                 };
                 box.appendChild(msgDiv);
             });
             box.scrollTop = box.scrollHeight;
         });
-    }; // Bracket ab sahi jagah hai!
+    };
+
     window.sendTextMessage = (cID) => {
         const inp = document.getElementById('input-' + cID);
-        if(inp.value) {
+        if(inp.value.trim()) {
             db.ref('msgs/' + cID).push({ s: me.uid, t: inp.value, type: 'text', ts: Date.now() });
             inp.value = "";
         }
@@ -194,24 +188,40 @@
                 let type = file.type.startsWith('video') ? 'video' : (file.type.startsWith('audio') ? 'audio' : 'img');
                 db.ref('msgs/' + cID).push({ s: me.uid, t: e.target.result, type: type, once: isOnce, viewed: false, ts: Date.now() });
                 document.getElementById('view-once-' + cID).checked = false;
+                input.value = "";
             };
             reader.readAsDataURL(file);
         }
     };
 
-    // --- SEARCH & POSTS ---
-    document.getElementById('global-search').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        db.ref('users').once('value', s => {
-            const list = document.getElementById('online-users-list'); list.innerHTML = "<b>Results</b>";
-            s.forEach(u => {
-                if(u.val().n.toLowerCase().includes(query) && u.key !== me.uid) {
-                    list.innerHTML += `<div class="side-item" onclick="openChat('${u.key}','${u.val().n}','${u.val().p}')"><img src="${u.val().p}" class="side-img"><b>${u.val().n}</b></div>`;
-                }
-            });
-        });
-    });
+    // --- VOICE RECORDING ---
+    window.startRecording = (cID) => {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    db.ref('msgs/' + cID).push({ s: me.uid, t: e.target.result, type: 'audio', ts: Date.now() });
+                };
+                reader.readAsDataURL(audioBlob);
+                stream.getTracks().forEach(t => t.stop());
+            };
+            mediaRecorder.start();
+            document.getElementById('mic-'+cID).style.color = 'red';
+        }).catch(() => alert("Mic access denied!"));
+    };
 
+    window.stopRecording = (cID) => {
+        if(mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+            document.getElementById('mic-'+cID).style.color = 'var(--main)';
+        }
+    };
+
+    // --- FEED & USERS ---
     window.previewPostImage = (i) => { if(i.files[0]){ const r=new FileReader(); r.onload=(e)=>{selectedPostImg=e.target.result; document.getElementById('post-image-preview').src=e.target.result; document.getElementById('image-preview-container').style.display='block';}; r.readAsDataURL(i.files[0]); } };
     window.removeSelectedImg = () => { selectedPostImg=""; document.getElementById('image-preview-container').style.display='none'; };
     window.submitPost = () => { const t=document.getElementById('post-input').value; if(t||selectedPostImg){ db.ref('posts').push({uid:me.uid, n:me.displayName, p:me.photoURL, t:t, img:selectedPostImg, ts:Date.now()}); document.getElementById('post-input').value=""; removeSelectedImg(); } };
@@ -224,10 +234,10 @@
                 feed.innerHTML += `<div class="card">
                     <div style="display:flex; justify-content:space-between;">
                         <div style="display:flex; gap:10px;"><img src="${post.p}" style="width:40px;height:40px;border-radius:50%;"><b>${post.n}</b></div>
-                        ${post.uid===me.uid?`<i class="fas fa-trash" onclick="db.ref('posts/${post.id}').remove()"></i>`:''}
+                        ${post.uid===me.uid?`<i class="fas fa-trash" style="cursor:pointer; opacity:0.5;" onclick="db.ref('posts/${post.id}').remove()"></i>`:''}
                     </div>
                     <p>${post.t}</p>${post.img?`<img src="${post.img}" class="post-img-content">`:''}
-                    <div style="display:flex; justify-content:space-around; margin-top:10px; cursor:pointer;" onclick="openChat('${post.uid}','${post.n}','${post.p}')"><i class="far fa-comment"></i> Chat</div>
+                    <div style="display:flex; justify-content:space-around; margin-top:10px; cursor:pointer; color:var(--text-light);" onclick="openChat('${post.uid}','${post.n}','${post.p}')"><i class="far fa-comment"></i> Chat</div>
                 </div>`;
             });
         });
@@ -240,10 +250,21 @@
         });
     }
 
-    window.sendRequest = (t) => { db.ref('requests/'+t+'/'+me.uid).set({n:me.displayName, p:me.photoURL}); alert("Sent!"); };
-    function listenForRequests() { db.ref('requests/'+me.uid).on('value', s => document.getElementById('notif-count').innerText=s.numChildren()); }
+    function listenForRequests() { 
+        db.ref('requests/'+me.uid).on('value', s => document.getElementById('notif-count').innerText = s.numChildren()); 
+    }
+
+    document.getElementById('global-search').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        db.ref('users').once('value', s => {
+            const list = document.getElementById('online-users-list'); list.innerHTML = "<b>Results</b>";
+            s.forEach(u => {
+                if(u.val().n.toLowerCase().includes(query) && u.key !== me.uid) {
+                    list.innerHTML += `<div class="side-item" onclick="openChat('${u.key}','${u.val().n}','${u.val().p}')"><img src="${u.val().p}" class="side-img"><b>${u.val().n}</b></div>`;
+                }
+            });
+        });
+    });
 </script>
 </body>
 </html>
-
-
