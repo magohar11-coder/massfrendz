@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root { --fb-blue: #0084ff; --main: #00c853; }
@@ -32,7 +32,6 @@
         .feed { width: 100%; max-width: 550px; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
 
-        /* Post Input Enhancements */
         .post-input-box textarea { width: 100%; border: none; outline: none; font-size: 16px; resize: none; min-height: 60px; margin-bottom: 10px; }
         .post-preview-img { width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
         .post-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
@@ -50,6 +49,7 @@
 
         .chat-footer { padding: 12px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; background: white; }
         .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 10px 15px; border-radius: 25px; outline: none; }
+        .footer-icons { display: flex; gap: 10px; color: var(--fb-blue); font-size: 18px; }
         .media-file { max-width: 100%; border-radius: 10px; margin-top: 5px; }
     </style>
 </head>
@@ -68,7 +68,7 @@
                 <img id="my-pic" src="">
                 <input type="file" id="profile-upload" hidden accept="image/*" onchange="updateProfilePic(this)">
             </label>
-            <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor:pointer; margin-left:10px; color:gray;"></i>
+            <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor:pointer; margin-left:15px; color:#555; font-size: 18px;"></i>
         </div>
     </nav>
     <div class="container">
@@ -104,34 +104,25 @@
             document.getElementById('login-screen').style.display='none';
             document.getElementById('main-app').style.display='block';
             
-            // Initial Profile Load
             db.ref('users/'+user.uid).on('value', s => {
                 let userData = s.val() || { n: user.displayName, p: user.photoURL };
                 document.getElementById('my-name').innerText = userData.n;
                 document.getElementById('my-pic').src = userData.p;
             });
-
             loadPosts();
         }
     });
 
     function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-    function logout() { auth.signOut().then(() => location.reload()); }
+    function logout() { if(confirm("Do you want to logout?")) auth.signOut().then(() => location.reload()); }
 
-    // --- Profile Picture Change Logic ---
     function updateProfilePic(input) {
-        let file = input.files[0];
         let reader = new FileReader();
-        reader.onload = e => {
-            let base64 = e.target.result;
-            db.ref('users/'+me.uid).update({ p: base64 });
-        };
-        reader.readAsDataURL(file);
+        reader.onload = e => db.ref('users/'+me.uid).update({ p: e.target.result });
+        reader.readAsDataURL(input.files[0]);
     }
 
-    // --- Post with Media Logic ---
     function previewPostMedia(input) {
-        let file = input.files[0];
         let reader = new FileReader();
         reader.onload = e => {
             tempPostMedia = e.target.result;
@@ -139,22 +130,16 @@
             prev.src = tempPostMedia;
             prev.style.display = 'block';
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(input.files[0]);
     }
 
     function submitPost() {
         let txt = document.getElementById('post-text').value;
         if(!txt.trim() && !tempPostMedia) return;
-
         db.ref('posts').push({
-            uid: me.uid,
-            n: me.displayName,
-            p: document.getElementById('my-pic').src,
-            t: txt,
-            m: tempPostMedia,
-            ts: Date.now()
+            uid: me.uid, n: document.getElementById('my-name').innerText,
+            p: document.getElementById('my-pic').src, t: txt, m: tempPostMedia, ts: Date.now()
         });
-
         document.getElementById('post-text').value = "";
         document.getElementById('post-media-preview').style.display = 'none';
         tempPostMedia = "";
@@ -165,23 +150,27 @@
             const list = document.getElementById('post-list'); list.innerHTML = "";
             s.forEach(x => {
                 let p = x.val();
-                let mediaTag = p.m ? (p.m.includes('video') ? `<video src="${p.m}" controls class="media-file"></video>` : `<img src="${p.m}" class="media-file">`) : "";
+                let isMe = p.uid === me.uid;
+                let mediaTag = p.m ? (p.m.includes('data:video') ? `<video src="${p.m}" controls class="media-file"></video>` : `<img src="${p.m}" class="media-file">`) : "";
                 
-                list.innerHTML = `<div class="card">
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                        <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                        <b>${p.n}</b>
+                let card = `<div class="card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                            <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                            <b>${p.n}</b>
+                        </div>
+                        ${isMe ? `<i class="fas fa-trash-alt" style="color:#ddd; cursor:pointer;" onclick="db.ref('posts/${x.key}').remove()"></i>` : ''}
                     </div>
                     <p style="margin:5px 0;">${p.t}</p>
                     ${mediaTag}
                     <hr style="opacity:0.1; margin:15px 0;">
                     <button onclick="openChat('${p.uid}','${p.n}')" style="background:var(--fb-blue); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; width:100%;">Message</button>
-                </div>` + list.innerHTML;
+                </div>`;
+                list.innerHTML = card + list.innerHTML;
             });
         });
     }
 
-    // --- Chat Logic (Kept exactly same as your request) ---
     function openChat(uid, name) {
         let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
         if(document.getElementById('win-'+chatID)) return;
@@ -197,11 +186,12 @@
                     <div class="del-btn" onclick="deleteMsg('${chatID}', 'me')">Remove for Me</div>
                 </div>
             </div>
-            <div class="chat-header" id="head-${chatID}"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer;">&times;</span></div>
+            <div class="chat-header" id="head-${chatID}"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer; font-size:20px;">&times;</span></div>
             <div id="body-${chatID}" class="chat-body"></div>
             <div class="chat-footer">
                 <div class="footer-icons">
-                    <label><i class="fas fa-image"></i><input type="file" accept="image/*" hidden onchange="sendMedia('${chatID}', this, 'image')"></label>
+                    <label><i class="fas fa-camera"></i><input type="file" accept="image/*" hidden onchange="sendMedia('${chatID}', this, 'image')"></label>
+                    <label><i class="fas fa-video"></i><input type="file" accept="video/*" hidden onchange="sendMedia('${chatID}', this, 'video')"></label>
                 </div>
                 <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')">
             </div>`;
@@ -216,8 +206,11 @@
                 let isMe = d.s === me.uid;
                 let mDiv = document.createElement('div');
                 mDiv.id = 'msg-'+m.key; mDiv.className = `msg ${isMe?'msg-me':'msg-them'}`;
+                
                 if(d.type==='image') mDiv.innerHTML=`<img src="${d.t}" class="media-file">`;
+                else if(d.type==='video') mDiv.innerHTML=`<video src="${d.t}" controls class="media-file"></video>`;
                 else mDiv.innerText = d.t;
+                
                 mDiv.onclick = () => toggleMsg(m.key, chatID, isMe);
                 body.appendChild(mDiv);
             });
@@ -230,9 +223,11 @@
         let el = document.getElementById('msg-'+mid);
         if(idx > -1) { selectedMsgs[cid].splice(idx,1); el.classList.remove('msg-selected'); }
         else { selectedMsgs[cid].push(mid); el.classList.add('msg-selected'); }
+        
         let bar = document.getElementById('bar-'+cid);
         let head = document.getElementById('head-'+cid);
         let btnEvery = document.getElementById('btn-every-'+cid);
+        
         if(selectedMsgs[cid].length > 0) {
             bar.style.display = 'flex'; head.style.display = 'none';
             document.getElementById('count-'+cid).innerText = selectedMsgs[cid].length + " Selected";
@@ -261,10 +256,9 @@
     }
 
     function sendMedia(cid, input, type) {
-        let file = input.files[0];
         let reader = new FileReader();
         reader.onload = e => db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type:type, ts:Date.now()});
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(input.files[0]);
     }
 </script>
 </body>
