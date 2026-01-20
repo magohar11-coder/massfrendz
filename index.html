@@ -3,83 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Massfrendz | Advanced Portal</title>
+    <title>Massfrendz | Facebook Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
     
     <style>
-        :root { --main: #00c853; --fb-blue: #1877f2; --bg: #f0f2f5; }
-        body { background: var(--bg); font-family: 'Segoe UI', Arial; margin: 0; }
-        nav { position: fixed; top: 0; width: 100%; height: 56px; background: white; border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1000; box-sizing: border-box; }
-        .nav-left { display: flex; align-items: center; gap: 10px; flex: 1; }
-        .search-box { background: #f0f2f5; border-radius: 20px; padding: 5px 12px; display: flex; align-items: center; width: 200px; }
-        .search-box input { border: none; background: transparent; outline: none; padding-left: 5px; width: 100%; }
-        .nav-right { display: flex; align-items: center; gap: 20px; }
-        .notif-bell { position: relative; cursor: pointer; font-size: 20px; color: #65676b; }
-        .notif-count { position: absolute; top: -5px; right: -5px; background: red; color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%; display: none; }
-        .main-content { margin-top: 70px; display: flex; justify-content: center; gap: 20px; }
-        .feed { width: 100%; max-width: 500px; padding: 10px; }
-        .card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        .chat-window { position: fixed; bottom: 0; right: 20px; width: 330px; height: 450px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 12px 28px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
-        .chat-header { background: white; border-bottom: 1px solid #ddd; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .action-bar { background: var(--fb-blue); color: white; padding: 8px 12px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
-        .chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #fff; }
-        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; cursor: pointer; border: 2px solid transparent; position: relative; }
-        .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; }
-        .msg-them { background: #e4e6e9; color: black; align-self: flex-start; }
-        .msg-selected { border-color: #ffc107 !important; background: #fff9c4 !important; color: black !important; }
-        .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 8px; align-items: center; }
-        .chat-footer input[type="text"] { flex: 1; border: none; background: #f0f2f5; padding: 8px 15px; border-radius: 20px; outline: none; }
-        .chat-img, .chat-vid { max-width: 200px; border-radius: 10px; display: block; margin-bottom: 5px; }
-        .status-text { font-size: 10px; display: block; text-align: right; opacity: 0.7; margin-top: 4px; }
+        :root { --fb-blue: #0084ff; --bg: #f0f2f5; --them-bg: #e4e6e9; --me-bg: #0084ff; }
+        body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; }
+        
+        /* Messenger Style Chat Window */
+        .chat-window { position: fixed; bottom: 0; right: 80px; width: 328px; height: 455px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 12px 28px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; transition: all 0.3s; }
+        .chat-header { padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.1); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .chat-header b { color: #050505; font-size: 15px; }
+
+        /* Action Bar for Deleting (FB Style Blue Bar) */
+        .action-bar { background: var(--fb-blue); color: white; padding: 10px 15px; display: none; align-items: center; justify-content: space-between; font-size: 14px; border-radius: 8px 8px 0 0; }
+        .btn-action { cursor: pointer; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 4px; font-weight: 600; font-size: 12px; }
+        .btn-action:hover { background: rgba(255,255,255,0.3); }
+
+        .chat-body { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; background: #fff; }
+        
+        /* Messenger Bubbles */
+        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 70%; font-size: 14px; position: relative; cursor: pointer; transition: transform 0.1s; }
+        .msg-me { background: var(--me-bg); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg-them { background: var(--them-bg); color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .msg-selected { opacity: 0.7; transform: scale(0.95); box-shadow: 0 0 0 2px #0084ff; }
+
+        .status-tick { font-size: 10px; margin-left: 5px; opacity: 0.8; }
+        
+        /* Chat Footer */
+        .chat-footer { padding: 10px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #eee; }
+        .footer-icons { color: var(--fb-blue); font-size: 18px; cursor: pointer; display: flex; gap: 12px; }
+        .input-container { flex: 1; background: #f0f2f5; border-radius: 20px; padding: 8px 12px; display: flex; }
+        .input-container input { border: none; background: transparent; outline: none; width: 100%; font-size: 14px; }
+        
+        .chat-media { max-width: 200px; border-radius: 12px; border: 1px solid #ddd; margin: 4px 0; }
     </style>
 </head>
 <body>
 
-<div id="login-screen" style="height:100vh; display:flex; align-items:center; justify-content:center; background:white;">
-    <button onclick="login()" style="padding:15px 30px; background:var(--fb-blue); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Login with Google</button>
-</div>
-
-<div id="main-app" style="display:none;">
-    <nav>
-        <div class="nav-left">
-            <h2 style="color:var(--main); margin:0;">MF</h2>
-            <div class="search-box">
-                <i class="fas fa-search" style="color:gray;"></i>
-                <input type="text" id="user-search" placeholder="Search friends..." oninput="searchUsers(this.value)">
-            </div>
-        </div>
-        <div class="nav-right">
-            <div class="notif-bell" onclick="toggleNotif()">
-                <i class="fas fa-bell"></i>
-                <span id="bell-count" class="notif-count">0</span>
-            </div>
-            <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor:pointer;"></i>
-        </div>
-    </nav>
-    <div class="main-content"><div class="feed"><div id="post-list"></div></div></div>
+<div id="main-app">
+    <div style="padding: 20px;">
+        <h3>Contacts</h3>
+        <button onclick="openChat('ali_uid', 'Ali Gohar')">Chat with Ali</button>
+    </div>
 </div>
 
 <script>
+    // Firebase Config (Keep your original one)
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth(); const db = firebase.database();
-    let me = null; let selectedMsgs = {};
-
-    auth.onAuthStateChanged(user => {
-        if(user) {
-            me = user;
-            document.getElementById('login-screen').style.display='none';
-            document.getElementById('main-app').style.display='block';
-            db.ref('users/'+user.uid).update({n:user.displayName, p:user.photoURL});
-            loadPosts();
-        }
-    });
-
-    function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-    function logout() { auth.signOut().then(() => location.reload()); }
+    const db = firebase.database();
+    
+    // Mock user for testing - Replace with real Auth
+    let me = { uid: "designer_uid", displayName: "Designer" }; 
+    let selectedMsgs = {};
 
     function openChat(uid, name) {
         let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
@@ -91,87 +71,114 @@
         win.innerHTML = `
             <div id="bar-${chatID}" class="action-bar">
                 <span id="count-${chatID}">0 Selected</span>
-                <span id="btn-unsend-${chatID}" onclick="handleUnsend('${chatID}')" style="cursor:pointer; display:none;">Delete for Everyone</span>
+                <div class="btn-action" id="del-btn-${chatID}" onclick="handleDeleteEvery('${chatID}')">
+                   <i class="fas fa-trash"></i> Delete for Everyone
+                </div>
             </div>
-            <div class="chat-header"><b>${name}</b><span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span></div>
+            <div class="chat-header" id="head-${chatID}">
+                <b>${name}</b>
+                <span onclick="document.getElementById('win-${chatID}').remove()" style="cursor:pointer; color:var(--fb-blue); font-weight:bold;">&times;</span>
+            </div>
             <div id="body-${chatID}" class="chat-body"></div>
             <div class="chat-footer">
-                <label style="cursor:pointer;"><i class="fas fa-paperclip"></i><input type="file" accept="image/*,video/*" hidden onchange="sendMediaChat('${chatID}', this)"></label>
-                <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')">
+                <div class="footer-icons">
+                    <label><i class="fas fa-image"></i><input type="file" accept="image/*" hidden onchange="uploadMedia('${chatID}', this, 'image')"></label>
+                    <label><i class="fas fa-video"></i><input type="file" accept="video/*" hidden onchange="uploadMedia('${chatID}', this, 'video')"></label>
+                </div>
+                <div class="input-container">
+                    <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')">
+                </div>
+                <i class="fas fa-paper-plane" style="color:var(--fb-blue); cursor:pointer;" onclick="sendChat('${chatID}')"></i>
             </div>`;
         document.body.appendChild(win);
 
+        // Firebase Listener
         db.ref('msgs/'+chatID).on('value', s => {
             let body = document.getElementById('body-'+chatID); if(!body) return;
             body.innerHTML = "";
             s.forEach(m => {
                 let d = m.val(); let isMe = d.s === me.uid;
                 
-                // Seen logic
+                // Real-time Seen logic
                 if(!isMe && d.st !== 'seen') db.ref('msgs/'+chatID+'/'+m.key).update({st:'seen'});
 
                 let mDiv = document.createElement('div');
-                mDiv.id = 'msg-'+m.key; mDiv.className = `msg-bubble ${isMe?'msg-me':'msg-them'}`;
+                mDiv.id = 'msg-'+m.key; 
+                mDiv.className = `msg-bubble ${isMe?'msg-me':'msg-them'}`;
                 
-                // Media Logic (Image vs Video vs Text)
-                if(d.type==='image') mDiv.innerHTML=`<img src="${d.t}" class="chat-img">`;
-                else if(d.type==='video') mDiv.innerHTML=`<video src="${d.t}" controls class="chat-vid"></video>`;
+                // Content Logic
+                if(d.type === 'image') mDiv.innerHTML = `<img src="${d.t}" class="chat-media">`;
+                else if(d.type === 'video') mDiv.innerHTML = `<video src="${d.t}" controls class="chat-media"></video>`;
                 else mDiv.innerText = d.t;
 
-                if(isMe) mDiv.innerHTML += `<span class="status-text">${d.st === 'seen' ? 'Seen' : 'Sent'}</span>`;
-                
-                mDiv.onclick = () => toggleMsg(m.key, chatID, isMe, d.ts);
+                // Seen/Sent Tick
+                if(isMe) {
+                    let icon = d.st === 'seen' ? 'fa-check-double' : 'fa-check';
+                    mDiv.innerHTML += `<i class="fas ${icon} status-tick"></i>`;
+                }
+
+                mDiv.onclick = () => toggleSelection(m.key, chatID, isMe, d.ts);
                 body.appendChild(mDiv);
             });
             body.scrollTop = body.scrollHeight;
         });
     }
 
-    function toggleMsg(mid, cid, isMe, timestamp) {
+    function toggleSelection(mid, cid, isMe, ts) {
         let idx = selectedMsgs[cid].indexOf(mid);
         let el = document.getElementById('msg-'+mid);
-        if(idx > -1) { selectedMsgs[cid].splice(idx,1); el.classList.remove('msg-selected'); }
-        else { selectedMsgs[cid].push(mid); el.classList.add('msg-selected'); }
+        
+        if(idx > -1) {
+            selectedMsgs[cid].splice(idx,1);
+            el.classList.remove('msg-selected');
+        } else {
+            selectedMsgs[cid].push(mid);
+            el.classList.add('msg-selected');
+        }
 
         let bar = document.getElementById('bar-'+cid);
-        let unsendBtn = document.getElementById('btn-unsend-'+cid);
-        
-        let hasSelections = selectedMsgs[cid].length > 0;
-        bar.style.display = hasSelections ? 'flex' : 'none';
-        document.getElementById('count-'+cid).innerText = selectedMsgs[cid].length + " Selected";
+        let head = document.getElementById('head-'+cid);
+        let delBtn = document.getElementById('del-btn-'+cid);
+        let count = selectedMsgs[cid].length;
 
-        // Logic: Agar message mera hai aur 10 min (600000ms) se kam purana hai, tabhi delete dikhao
-        let timeLimit = 600000;
-        let isRecent = (Date.now() - timestamp) < timeLimit;
-        unsendBtn.style.display = (isMe && isRecent) ? 'block' : 'none';
+        if(count > 0) {
+            bar.style.display = 'flex';
+            head.style.display = 'none';
+            document.getElementById('count-'+cid).innerText = count + " Selected";
+            
+            // "Delete for Everyone" logic: 10 min limit + Ownership
+            let isRecent = (Date.now() - ts) < 600000;
+            delBtn.style.display = (isMe && isRecent) ? 'block' : 'none';
+        } else {
+            bar.style.display = 'none';
+            head.style.display = 'flex';
+        }
     }
 
-    function handleUnsend(cid) {
-        selectedMsgs[cid].forEach(mid => db.ref('msgs/'+cid+'/'+mid).remove());
-        selectedMsgs[cid] = []; document.getElementById('bar-'+cid).style.display = 'none';
+    function handleDeleteEvery(cid) {
+        if(confirm("Delete selected messages for everyone?")) {
+            selectedMsgs[cid].forEach(mid => db.ref('msgs/'+cid+'/'+mid).remove());
+            selectedMsgs[cid] = [];
+            document.getElementById('bar-'+cid).style.display = 'none';
+            document.getElementById('head-'+cid).style.display = 'flex';
+        }
     }
 
     function sendChat(cid) {
         let i = document.getElementById('in-'+cid);
-        if(i.value) { db.ref('msgs/'+cid).push({s:me.uid, t:i.value, type:'text', ts:Date.now(), st:'sent'}); i.value=""; }
+        if(!i.value.trim()) return;
+        db.ref('msgs/'+cid).push({ s: me.uid, t: i.value, type: 'text', ts: Date.now(), st: 'sent' });
+        i.value = "";
     }
 
-    function sendMediaChat(cid, input) {
-        const file = input.files[0]; if(!file) return;
-        const reader = new FileReader();
-        const type = file.type.startsWith('video') ? 'video' : 'image';
-        reader.onload = e => db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type:type, ts:Date.now(), st:'sent'});
+    function uploadMedia(cid, input, type) {
+        let file = input.files[0];
+        if(!file) return;
+        let reader = new FileReader();
+        reader.onload = e => {
+            db.ref('msgs/'+cid).push({ s: me.uid, t: e.target.result, type: type, ts: Date.now(), st: 'sent' });
+        };
         reader.readAsDataURL(file);
-    }
-
-    function loadPosts() {
-        db.ref('posts').on('value', s => {
-            const list = document.getElementById('post-list'); list.innerHTML = "";
-            s.forEach(x => {
-                let p = x.val();
-                list.innerHTML = `<div class="card"><b>${p.n}</b><p>${p.t}</p><button onclick="openChat('${p.uid}','${p.n}')" style="background:var(--fb-blue); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Message</button></div>` + list.innerHTML;
-            });
-        });
     }
 </script>
 </body>
