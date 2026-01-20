@@ -42,6 +42,8 @@
         
         .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 8px; background: white; }
         .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
+        .edit-pic-label { display: block; width: 100px; height: 100px; margin: 0 auto 10px; position: relative; cursor: pointer; }
+        .edit-pic-label i { position: absolute; bottom: 5px; right: 5px; background: white; border-radius: 50%; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -60,8 +62,15 @@
 
 <div id="profile-overlay" class="overlay" onclick="closeModals(event)">
     <div class="modal" style="text-align:center;">
-        <img id="prof-large-pic" src="" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--main); object-fit:cover;">
-        <h3 id="prof-large-name"></h3>
+        <label class="edit-pic-label">
+            <img id="prof-large-pic" src="" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--main); object-fit:cover;">
+            <i class="fas fa-camera"></i>
+            <input type="file" hidden onchange="updateProfilePic(this)" accept="image/*">
+        </label>
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="edit-name-input" style="text-align:center; font-size: 18px; font-weight: bold; border: 1px solid #ddd; border-radius: 5px; padding: 5px; width: 80%;">
+            <br><button onclick="updateName()" style="margin-top:10px; background:var(--main); color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;">Update Name</button>
+        </div>
         <p style="color: #666;">Massfrendz Member</p>
         <button onclick="logout()" style="background:#ff4d4d; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold; width:100%;">Logout Account</button>
     </div>
@@ -116,7 +125,7 @@
                 let d = s.val() || { n: user.displayName, p: user.photoURL };
                 document.getElementById('my-name').innerText = d.n;
                 document.getElementById('my-pic').src = d.p;
-                db.ref('users/'+user.uid).update({ n: d.n, p: d.p });
+                if(!s.exists()) db.ref('users/'+user.uid).set({ n: d.n, p: d.p });
             });
             loadPosts();
         }
@@ -126,9 +135,20 @@
     function logout() { if(confirm("Logout?")) auth.signOut().then(() => location.reload()); }
 
     function openMyProfile() {
-        document.getElementById('prof-large-name').innerText = document.getElementById('my-name').innerText;
+        document.getElementById('edit-name-input').value = document.getElementById('my-name').innerText;
         document.getElementById('prof-large-pic').src = document.getElementById('my-pic').src;
         document.getElementById('profile-overlay').style.display = 'flex';
+    }
+
+    function updateName() {
+        let newName = document.getElementById('edit-name-input').value;
+        if(newName.trim()) db.ref('users/'+me.uid).update({ n: newName }).then(() => alert("Name Updated!"));
+    }
+
+    function updateProfilePic(input) {
+        let r = new FileReader();
+        r.onload = e => db.ref('users/'+me.uid).update({ p: e.target.result }).then(() => alert("Pic Updated!"));
+        r.readAsDataURL(input.files[0]);
     }
 
     function closeModals(e) { if(e.target.className === 'overlay') e.target.style.display = 'none'; }
@@ -144,7 +164,7 @@
                 if(user.n.toLowerCase().includes(val.toLowerCase()) && u.key !== me.uid) {
                     res.innerHTML += `<div class="search-item">
                             <div style="display:flex; align-items:center; gap:10px;">
-                                <img src="${user.p}">
+                                <img src="${user.p}" style="width:40px;height:40px;border-radius:50%">
                                 <b>${user.n}</b>
                             </div>
                             <button onclick="openChat('${u.key}','${user.n}')" style="background:var(--fb-blue); color:white; border:none; border-radius:20px; padding:6px 15px; cursor:pointer;">Message</button>
@@ -156,11 +176,7 @@
 
     function previewPostMedia(input) {
         let r = new FileReader(); 
-        r.onload = e => { 
-            tempPostMedia = e.target.result; 
-            let p = document.getElementById('post-media-preview'); 
-            p.src = tempPostMedia; p.style.display = 'block'; 
-        };
+        r.onload = e => { tempPostMedia = e.target.result; let p = document.getElementById('post-media-preview'); p.src = tempPostMedia; p.style.display = 'block'; };
         r.readAsDataURL(input.files[0]);
     }
 
@@ -211,22 +227,19 @@
             let b = document.getElementById('body-'+chatID); if(!b) return; b.innerHTML = "";
             s.forEach(m => {
                 let d = m.val(); let isMe = d.s === me.uid;
-                // Delete for me check
                 if(d.deletedFor && d.deletedFor.includes(me.uid)) return;
-
                 let mDiv = document.createElement('div'); mDiv.className = `msg ${isMe?'msg-me':'msg-them'}`;
                 let content = d.t;
                 if(d.type === 'img') content = `<img src="${d.t}" class="media-file">`;
                 if(d.type === 'vid') content = `<video src="${d.t}" controls class="media-file"></video>`;
                 mDiv.innerHTML = content;
-
                 mDiv.onclick = () => {
-                    let choice = prompt("Select Option:\n1. Delete for Me\n2. Delete for Everyone (If your message)", "1");
+                    let choice = prompt("Select Option:\n1. Delete for Me\n2. Delete for Everyone", "1");
                     if(choice === "1") {
                         let delList = d.deletedFor || []; delList.push(me.uid);
                         db.ref('msgs/'+chatID+'/'+m.key).update({deletedFor: delList});
                     } else if(choice === "2" && isMe) {
-                        if(confirm("Delete for everyone?")) db.ref('msgs/'+chatID+'/'+m.key).remove();
+                        db.ref('msgs/'+chatID+'/'+m.key).remove();
                     }
                 };
                 b.appendChild(mDiv);
