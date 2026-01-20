@@ -30,9 +30,8 @@
 
         .container { margin-top: 80px; display: flex; flex-direction: column; align-items: center; padding: 10px; }
         .feed { width: 100%; max-width: 550px; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; }
 
-        /* Post Input Enhancements */
         .post-input-box textarea { width: 100%; border: none; outline: none; font-size: 16px; resize: none; min-height: 60px; margin-bottom: 10px; }
         .post-preview-img { width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
         .post-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
@@ -51,6 +50,8 @@
         .chat-footer { padding: 12px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; background: white; }
         .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 10px 15px; border-radius: 25px; outline: none; }
         .media-file { max-width: 100%; border-radius: 10px; margin-top: 5px; }
+        .del-post-btn { position: absolute; top: 15px; right: 15px; color: #ccc; cursor: pointer; font-size: 14px; }
+        .del-post-btn:hover { color: red; }
     </style>
 </head>
 <body>
@@ -79,8 +80,8 @@
             </div>
             <div class="post-actions">
                 <label style="color:var(--fb-blue); cursor:pointer; font-weight:600;">
-                    <i class="fas fa-image"></i> Photo/Video
-                    <input type="file" id="post-media-input" hidden accept="image/*,video/*" onchange="previewPostMedia(this)">
+                    <i class="fas fa-image"></i> Photo
+                    <input type="file" id="post-media-input" hidden accept="image/*" onchange="previewPostMedia(this)">
                 </label>
                 <button onclick="submitPost()" style="background:var(--main); color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer; font-weight:bold;">Post</button>
             </div>
@@ -103,14 +104,11 @@
             me = user;
             document.getElementById('login-screen').style.display='none';
             document.getElementById('main-app').style.display='block';
-            
-            // Initial Profile Load
             db.ref('users/'+user.uid).on('value', s => {
                 let userData = s.val() || { n: user.displayName, p: user.photoURL };
                 document.getElementById('my-name').innerText = userData.n;
                 document.getElementById('my-pic').src = userData.p;
             });
-
             loadPosts();
         }
     });
@@ -118,26 +116,20 @@
     function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     function logout() { auth.signOut().then(() => location.reload()); }
 
-    // --- Profile Picture Change Logic ---
     function updateProfilePic(input) {
         let file = input.files[0];
         let reader = new FileReader();
-        reader.onload = e => {
-            let base64 = e.target.result;
-            db.ref('users/'+me.uid).update({ p: base64 });
-        };
+        reader.onload = e => db.ref('users/'+me.uid).update({ p: e.target.result });
         reader.readAsDataURL(file);
     }
 
-    // --- Post with Media Logic ---
     function previewPostMedia(input) {
         let file = input.files[0];
         let reader = new FileReader();
         reader.onload = e => {
             tempPostMedia = e.target.result;
             let prev = document.getElementById('post-media-preview');
-            prev.src = tempPostMedia;
-            prev.style.display = 'block';
+            prev.src = tempPostMedia; prev.style.display = 'block';
         };
         reader.readAsDataURL(file);
     }
@@ -145,19 +137,17 @@
     function submitPost() {
         let txt = document.getElementById('post-text').value;
         if(!txt.trim() && !tempPostMedia) return;
-
         db.ref('posts').push({
-            uid: me.uid,
-            n: me.displayName,
-            p: document.getElementById('my-pic').src,
-            t: txt,
-            m: tempPostMedia,
-            ts: Date.now()
+            uid: me.uid, n: me.displayName, p: document.getElementById('my-pic').src,
+            t: txt, m: tempPostMedia, ts: Date.now()
         });
-
         document.getElementById('post-text').value = "";
         document.getElementById('post-media-preview').style.display = 'none';
         tempPostMedia = "";
+    }
+
+    function deletePost(pid) {
+        if(confirm("Delete this post?")) db.ref('posts/'+pid).remove();
     }
 
     function loadPosts() {
@@ -165,15 +155,14 @@
             const list = document.getElementById('post-list'); list.innerHTML = "";
             s.forEach(x => {
                 let p = x.val();
-                let mediaTag = p.m ? (p.m.includes('video') ? `<video src="${p.m}" controls class="media-file"></video>` : `<img src="${p.m}" class="media-file">`) : "";
-                
-                list.innerHTML = `<div class="card">
+                let delBtn = p.uid === me.uid ? `<i class="fas fa-trash del-post-btn" onclick="deletePost('${x.key}')"></i>` : "";
+                let mediaTag = p.m ? `<img src="${p.m}" class="media-file">` : "";
+                list.innerHTML = `<div class="card">${delBtn}
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                         <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
                         <b>${p.n}</b>
                     </div>
-                    <p style="margin:5px 0;">${p.t}</p>
-                    ${mediaTag}
+                    <p style="margin:5px 0;">${p.t}</p>${mediaTag}
                     <hr style="opacity:0.1; margin:15px 0;">
                     <button onclick="openChat('${p.uid}','${p.n}')" style="background:var(--fb-blue); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; width:100%;">Message</button>
                 </div>` + list.innerHTML;
@@ -181,17 +170,14 @@
         });
     }
 
-    // --- Chat Logic (Kept exactly same as your request) ---
     function openChat(uid, name) {
         let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
         if(document.getElementById('win-'+chatID)) return;
         selectedMsgs[chatID] = [];
-
         let win = document.createElement('div');
         win.id = 'win-'+chatID; win.className = 'chat-window';
         win.innerHTML = `
-            <div id="bar-${chatID}" class="action-bar">
-                <span id="count-${chatID}">0 Selected</span>
+            <div id="bar-${chatID}" class="action-bar"><span id="count-${chatID}">0 Selected</span>
                 <div class="btn-group">
                     <div class="del-btn" id="btn-every-${chatID}" onclick="deleteMsg('${chatID}', 'every')">Delete for Everyone</div>
                     <div class="del-btn" onclick="deleteMsg('${chatID}', 'me')">Remove for Me</div>
@@ -200,8 +186,9 @@
             <div class="chat-header" id="head-${chatID}"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer;">&times;</span></div>
             <div id="body-${chatID}" class="chat-body"></div>
             <div class="chat-footer">
-                <div class="footer-icons">
+                <div style="display:flex; gap:10px; color:var(--fb-blue); font-size:18px;">
                     <label><i class="fas fa-image"></i><input type="file" accept="image/*" hidden onchange="sendMedia('${chatID}', this, 'image')"></label>
+                    <label><i class="fas fa-video"></i><input type="file" accept="video/*" hidden onchange="sendMedia('${chatID}', this, 'video')"></label>
                 </div>
                 <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')">
             </div>`;
@@ -211,12 +198,12 @@
             let body = document.getElementById('body-'+chatID); if(!body) return;
             body.innerHTML = "";
             s.forEach(m => {
-                let d = m.val(); 
-                if(d.hide && d.hide[me.uid]) return;
+                let d = m.val(); if(d.hide && d.hide[me.uid]) return;
                 let isMe = d.s === me.uid;
                 let mDiv = document.createElement('div');
                 mDiv.id = 'msg-'+m.key; mDiv.className = `msg ${isMe?'msg-me':'msg-them'}`;
                 if(d.type==='image') mDiv.innerHTML=`<img src="${d.t}" class="media-file">`;
+                else if(d.type==='video') mDiv.innerHTML=`<video src="${d.t}" controls class="media-file"></video>`;
                 else mDiv.innerText = d.t;
                 mDiv.onclick = () => toggleMsg(m.key, chatID, isMe);
                 body.appendChild(mDiv);
