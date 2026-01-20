@@ -34,7 +34,8 @@
         .chat-window { position: fixed; bottom: 0; right: 20px; width: 340px; height: 420px; background: white; border-radius: 12px 12px 0 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; z-index: 2000; }
         .chat-header { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; }
         .chat-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #f0f2f5; }
-        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; position: relative; cursor: pointer; }
+        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; position: relative; cursor: pointer; transition: 0.2s; }
+        .msg:active { transform: scale(0.95); opacity: 0.8; }
         .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .msg-them { background: #e4e6e9; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
         .media-file { max-width: 100%; border-radius: 10px; display: block; margin-top: 5px; }
@@ -141,8 +142,7 @@
             s.forEach(u => {
                 let user = u.val();
                 if(user.n.toLowerCase().includes(val.toLowerCase()) && u.key !== me.uid) {
-                    res.innerHTML += `
-                        <div class="search-item">
+                    res.innerHTML += `<div class="search-item">
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <img src="${user.p}">
                                 <b>${user.n}</b>
@@ -174,10 +174,9 @@
     function loadPosts() {
         db.ref('posts').on('value', s => {
             const list = document.getElementById('post-list'); list.innerHTML = ""; 
-            let posts = []; s.forEach(x => posts.push({id:x.key, val:x.val()}));
-            posts.reverse().forEach(item => {
+            let postsArr = []; s.forEach(x => postsArr.push({id:x.key, val:x.val()}));
+            postsArr.reverse().forEach(item => {
                 let p = item.val;
-                // Post se video tag hata diya gaya hai
                 let mTag = p.m ? `<img src="${p.m}" class="media-file">` : "";
                 list.innerHTML += `<div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -200,8 +199,7 @@
         let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
         if(document.getElementById('win-'+chatID)) return;
         let win = document.createElement('div'); win.id = 'win-'+chatID; win.className = 'chat-window';
-        win.innerHTML = `
-            <div class="chat-header"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer; font-size:20px;">&times;</span></div>
+        win.innerHTML = `<div class="chat-header"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer; font-size:20px;">&times;</span></div>
             <div id="body-${chatID}" class="chat-body"></div>
             <div class="chat-footer">
                 <label style="color:var(--fb-blue); cursor:pointer;"><i class="fas fa-paperclip"></i><input type="file" hidden onchange="sendMedia('${chatID}', this)" accept="image/*,video/*"></label>
@@ -213,17 +211,24 @@
             let b = document.getElementById('body-'+chatID); if(!b) return; b.innerHTML = "";
             s.forEach(m => {
                 let d = m.val(); let isMe = d.s === me.uid;
+                // Delete for me check
+                if(d.deletedFor && d.deletedFor.includes(me.uid)) return;
+
                 let mDiv = document.createElement('div'); mDiv.className = `msg ${isMe?'msg-me':'msg-them'}`;
-                
-                // Chat Media Logic (Image and Video)
                 let content = d.t;
                 if(d.type === 'img') content = `<img src="${d.t}" class="media-file">`;
                 if(d.type === 'vid') content = `<video src="${d.t}" controls class="media-file"></video>`;
-                
                 mDiv.innerHTML = content;
-                // Delete logic: click to delete if it's my message
-                if(isMe) mDiv.onclick = () => { if(confirm("Delete message?")) db.ref('msgs/'+chatID+'/'+m.key).remove(); };
-                
+
+                mDiv.onclick = () => {
+                    let choice = prompt("Select Option:\n1. Delete for Me\n2. Delete for Everyone (If your message)", "1");
+                    if(choice === "1") {
+                        let delList = d.deletedFor || []; delList.push(me.uid);
+                        db.ref('msgs/'+chatID+'/'+m.key).update({deletedFor: delList});
+                    } else if(choice === "2" && isMe) {
+                        if(confirm("Delete for everyone?")) db.ref('msgs/'+chatID+'/'+m.key).remove();
+                    }
+                };
                 b.appendChild(mDiv);
             });
             b.scrollTop = b.scrollHeight;
@@ -236,10 +241,8 @@
     }
 
     function sendMedia(cid, input) {
-        let file = input.files[0];
-        let type = file.type.startsWith('video') ? 'vid' : 'img';
-        let r = new FileReader(); 
-        r.onload = e => db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type: type, ts: Date.now()});
+        let file = input.files[0]; let type = file.type.startsWith('video') ? 'vid' : 'img';
+        let r = new FileReader(); r.onload = e => db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type: type, ts: Date.now()});
         r.readAsDataURL(file);
     }
 </script>
