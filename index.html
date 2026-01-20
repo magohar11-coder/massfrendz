@@ -3,89 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Massfrendz | Gohar Pro Max</title>
+    <title>Massfrendz | Advanced Chat</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
     
     <style>
-        :root { --main: #00c853; --bg: #f0f2f5; --card: #ffffff; --text-dark: #1c1e21; }
-        body { background: var(--bg); color: var(--text-dark); font-family: 'Segoe UI', Arial; margin: 0; padding: 0; overflow-x: hidden; }
+        :root { --main: #00c853; --fb-blue: #1877f2; --bg: #f0f2f5; }
+        body { background: var(--bg); font-family: 'Segoe UI', Arial; margin: 0; }
         
-        #login-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        #main-app { display: none; }
+        /* Layout */
+        nav { position: fixed; top: 0; width: 100%; height: 56px; background: white; border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1000; box-sizing: border-box; }
+        .main-content { margin-top: 70px; display: flex; justify-content: center; }
+        .feed { width: 100%; max-width: 500px; padding: 10px; }
+        .card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 15px; }
 
-        nav { position: fixed; top: 0; width: 100%; height: 56px; background: var(--card); border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1000; box-sizing: border-box; }
-        .sidebar { position: fixed; left: 0; top: 56px; width: 280px; padding: 16px; }
-        .main-content { margin-left: 300px; margin-right: 320px; margin-top: 72px; padding: 0 16px; }
-        .card { background: var(--card); border-radius: 8px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 16px; max-width: 550px; margin-inline: auto; }
-        .post-img-content { width: 100%; border-radius: 8px; margin-top: 10px; }
+        /* Chat Window */
+        .chat-window { position: fixed; bottom: 0; right: 20px; width: 330px; height: 450px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 12px 28px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
+        .chat-header { background: white; border-bottom: 1px solid #ddd; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
         
-        /* Chat Styling */
-        .chat-float { position: fixed; bottom: 0; right: 320px; width: 300px; height: 420px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
-        .chat-header { background: var(--main); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .chat-msgs-area { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #f9f9f9; }
-        
-        /* Selection UI */
-        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 80%; font-size: 14px; cursor: pointer; position: relative; transition: 0.2s; border: 2px solid transparent; }
-        .msg-selected { border-color: #1877f2; background: #e7f3ff !important; color: black !important; box-shadow: 0 0 5px rgba(24, 119, 242, 0.5); }
-        
-        .delete-bar { background: #1877f2; color: white; padding: 8px 15px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
-        
-        .chat-input-area { padding: 8px; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: center; }
-        .chat-input-area input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
-        
-        .online-panel { position: fixed; right: 0; top: 56px; width: 300px; padding: 16px; border-left: 1px solid #ddd; height: 100vh; overflow-y: auto; }
-        .side-item { display: flex; align-items: center; gap: 12px; padding: 8px; cursor: pointer; border-radius: 8px; }
-        .side-item:hover { background: #e4e6e9; }
-        .side-img { width: 36px; height: 36px; border-radius: 50%; }
+        /* Selection Action Bar */
+        .action-bar { background: var(--fb-blue); color: white; padding: 8px 12px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
+        .action-btn { cursor: pointer; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; transition: 0.3s; }
+        .action-btn:hover { background: rgba(255,255,255,0.4); }
 
-        @media (max-width: 900px) { .sidebar, .online-panel { display: none; } .main-content { margin: 70px 10px; } .chat-float { right: 10px; width: 90%; } }
+        .chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #fff; }
+        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; position: relative; }
+        .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; }
+        .msg-them { background: #e4e6e9; color: black; align-self: flex-start; }
+        .msg-selected { border-color: #ffc107 !important; background: #fff9c4 !important; color: black !important; }
+
+        .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 8px; }
+        .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 8px 15px; border-radius: 20px; outline: none; }
     </style>
 </head>
 <body>
 
-<div id="login-screen">
-    <div class="card" style="text-align:center;">
-        <h1 style="color:var(--main);">MASSFRENDZ</h1>
-        <button onclick="login()" style="background:#4285F4; color:white; border:none; padding:12px 24px; border-radius:6px; cursor:pointer; font-weight:bold;">
-            <i class="fab fa-google"></i> Sign in with Google
-        </button>
-    </div>
+<div id="login-screen" style="height:100vh; display:flex; align-items:center; justify-content:center; background:white;">
+    <button onclick="login()" style="padding:15px 30px; background:var(--fb-blue); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Login with Google</button>
 </div>
 
-<div id="main-app">
+<div id="main-app" style="display:none;">
     <nav>
-        <h2 style="color: var(--main); margin: 0;">MASSFRENDZ</h2>
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor: pointer;"></i>
-            <img id="user-avatar" style="width: 35px; height: 35px; border-radius: 50%;">
-        </div>
+        <h2 style="color:var(--main); margin:0;">MASSFRENDZ</h2>
+        <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor:pointer;"></i>
     </nav>
 
-    <div class="sidebar">
-        <div class="side-item"><img id="side-dp" class="side-img"><b id="side-name">...</b></div>
-    </div>
-
     <div class="main-content">
-        <div class="card">
-            <textarea id="post-input" placeholder="What's on your mind?" style="width:100%; border:none; background:#f0f2f5; padding:10px; border-radius:10px; outline:none; resize:none;"></textarea>
-            <div id="image-preview-container" style="display:none; position:relative; margin-top:10px;">
-                <img id="post-image-preview" style="width:100%; border-radius:8px;">
-                <i class="fas fa-times" onclick="removeSelectedImg()" style="position:absolute; top:10px; right:10px; color:red; cursor:pointer; background:white; border-radius:50%; padding:5px;"></i>
+        <div class="feed">
+            <div class="card">
+                <textarea id="post-text" placeholder="What's on your mind?" style="width:100%; border:none; background:#f0f2f5; padding:10px; border-radius:8px; outline:none; resize:none;"></textarea>
+                <button id="post-btn" onclick="submitPost()" style="margin-top:10px; width:100%; background:var(--main); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;">Post</button>
             </div>
-            <div style="margin-top:10px; display:flex; justify-content:space-between;">
-                <label style="color:#45bd62; cursor:pointer;"><i class="fas fa-image"></i> Media<input type="file" id="post-media-input" hidden onchange="previewPostImage(this)"></label>
-                <button id="post-btn" onclick="submitPost()" style="background:var(--main); color:white; border:none; padding:5px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Post</button>
-            </div>
+            <div id="post-list"></div>
         </div>
-        <div id="main-feed"></div>
-    </div>
-
-    <div class="online-panel">
-        <b>Contacts</b>
-        <div id="online-users-list"></div>
     </div>
 </div>
 
@@ -93,167 +65,137 @@
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
-    
-    let me = null; let selectedPostImg = ""; let activeChatSelectedMsgs = {};
+
+    let me = null;
+    let selectedMsgs = {}; // Store selected IDs per chat
 
     auth.onAuthStateChanged(user => {
         if(user) {
             me = user;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            updateUI();
-            db.ref('users/'+user.uid).update({n:user.displayName, p:user.photoURL, online:true});
-            loadPosts(); loadOnlineUsers();
-        } else {
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('login-screen').style.display='none';
+            document.getElementById('main-app').style.display='block';
+            db.ref('users/'+user.uid).update({n:user.displayName, p:user.photoURL});
+            loadPosts();
         }
     });
 
     function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     function logout() { auth.signOut().then(() => location.reload()); }
 
-    function updateUI() {
-        document.getElementById('user-avatar').src = me.photoURL;
-        document.getElementById('side-dp').src = me.photoURL;
-        document.getElementById('side-name').innerText = me.displayName;
+    // --- Post Logic ---
+    function submitPost() {
+        let t = document.getElementById('post-text').value;
+        if(!t) return;
+        document.getElementById('post-btn').innerText = "Posting...";
+        db.ref('posts').push({uid:me.uid, n:me.displayName, p:me.photoURL, t:t, ts:Date.now()})
+        .then(() => {
+            document.getElementById('post-text').value = "";
+            document.getElementById('post-btn').innerText = "Post";
+        });
     }
 
-    // --- CHAT WITH SELECTION & DELETE ---
-    window.openChat = (uid, name, img) => {
-        const chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
-        if(document.getElementById('chat-window-'+chatID)) return;
-        
-        activeChatSelectedMsgs[chatID] = [];
-        const div = document.createElement('div');
-        div.id = 'chat-window-'+chatID;
-        div.className = 'chat-float';
-        div.innerHTML = `
-            <div id="del-bar-${chatID}" class="delete-bar">
-                <span id="del-count-${chatID}">0 Selected</span>
-                <div style="display:flex; gap:10px;">
-                    <i class="fas fa-trash" title="Unsend for everyone" onclick="deleteForEveryone('${chatID}')"></i>
+    function loadPosts() {
+        db.ref('posts').on('value', s => {
+            const list = document.getElementById('post-list'); list.innerHTML = "";
+            s.forEach(x => {
+                let p = x.val();
+                list.innerHTML = `<div class="card">
+                    <b>${p.n}</b><p>${p.t}</p>
+                    <button onclick="openChat('${p.uid}','${p.n}')" style="background:none; border:1px solid #ddd; padding:5px; cursor:pointer; border-radius:4px;">Message</button>
+                </div>` + list.innerHTML;
+            });
+        });
+    }
+
+    // --- THE ULTIMATE CHAT SYSTEM ---
+    function openChat(uid, name) {
+        let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
+        if(document.getElementById('win-'+chatID)) return;
+
+        selectedMsgs[chatID] = [];
+
+        let win = document.createElement('div');
+        win.id = 'win-'+chatID;
+        win.className = 'chat-window';
+        win.innerHTML = `
+            <div id="bar-${chatID}" class="action-bar">
+                <span id="count-${chatID}">0 Selected</span>
+                <div style="display:flex; gap:8px;">
+                    <span class="action-btn" onclick="handleUnsend('${chatID}')">Unsend</span>
+                    <span class="action-btn" onclick="handleRemove('${chatID}')">Remove</span>
                 </div>
             </div>
             <div class="chat-header">
                 <b>${name}</b>
-                <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span>
+                <span onclick="document.getElementById('win-${chatID}').remove()" style="cursor:pointer; font-size:20px;">&times;</span>
             </div>
-            <div id="msgs-${chatID}" class="chat-msgs-area"></div>
-            <div class="chat-input-area">
-                <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendText('${chatID}')">
+            <div id="body-${chatID}" class="chat-body"></div>
+            <div class="chat-footer">
+                <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')">
             </div>`;
-        document.body.appendChild(div);
+        document.body.appendChild(win);
 
+        // Listen for Messages
         db.ref('msgs/'+chatID).on('value', s => {
-            const box = document.getElementById('msgs-'+chatID); if(!box) return;
-            box.innerHTML = "";
+            let body = document.getElementById('body-'+chatID); 
+            if(!body) return;
+            body.innerHTML = "";
             s.forEach(m => {
-                const d = m.val(); const isMe = d.s === me.uid;
-                const msgDiv = document.createElement('div');
-                msgDiv.id = `msg-${m.key}`;
-                msgDiv.className = `msg-bubble`;
-                msgDiv.style = `background:${isMe?'var(--main)':'#e4e6e9'}; color:${isMe?'white':'black'}; align-self:${isMe?'flex-end':'flex-start'};`;
-                msgDiv.innerText = d.t;
+                let d = m.val(); let isMe = d.s === me.uid;
+                let mDiv = document.createElement('div');
+                mDiv.id = 'msg-' + m.key;
+                mDiv.className = `msg-bubble ${isMe ? 'msg-me':'msg-them'}`;
+                mDiv.innerText = d.t;
                 
-                // Click to Select
-                msgDiv.onclick = () => toggleSelect(chatID, m.key, isMe);
-                box.appendChild(msgDiv);
+                // Selection Trigger
+                mDiv.onclick = () => toggleMsg(m.key, chatID, isMe);
+                
+                body.appendChild(mDiv);
             });
-            box.scrollTop = box.scrollHeight;
+            body.scrollTop = body.scrollHeight;
         });
-    };
-
-    function toggleSelect(cid, mid, isMe) {
-        if(!isMe) return; // Sirf apne messages unsend ho sakte hain
-        const idx = activeChatSelectedMsgs[cid].indexOf(mid);
-        if(idx > -1) activeChatSelectedMsgs[cid].splice(idx, 1);
-        else activeChatSelectedMsgs[cid].push(mid);
-
-        const el = document.getElementById('msg-'+mid);
-        el.classList.toggle('msg-selected');
-
-        const bar = document.getElementById('del-bar-'+cid);
-        const count = activeChatSelectedMsgs[cid].length;
-        bar.style.display = count > 0 ? 'flex' : 'none';
-        document.getElementById('del-count-'+cid).innerText = count + " Selected";
     }
 
-    window.deleteForEveryone = (cid) => {
+    function toggleMsg(mid, cid, isMe) {
+        let idx = selectedMsgs[cid].indexOf(mid);
+        let el = document.getElementById('msg-'+mid);
+
+        if(idx > -1) {
+            selectedMsgs[cid].splice(idx, 1);
+            el.classList.remove('msg-selected');
+        } else {
+            selectedMsgs[cid].push(mid);
+            el.classList.add('msg-selected');
+        }
+
+        // Show/Hide Bar
+        let bar = document.getElementById('bar-'+cid);
+        bar.style.display = selectedMsgs[cid].length > 0 ? 'flex' : 'none';
+        document.getElementById('count-'+cid).innerText = selectedMsgs[cid].length + " Selected";
+    }
+
+    function handleUnsend(cid) {
         if(confirm("Unsend for everyone?")) {
-            activeChatSelectedMsgs[cid].forEach(mid => db.ref('msgs/'+cid+'/'+mid).remove());
-            activeChatSelectedMsgs[cid] = [];
-            document.getElementById('del-bar-'+cid).style.display = 'none';
+            selectedMsgs[cid].forEach(mid => db.ref('msgs/'+cid+'/'+mid).remove());
+            selectedMsgs[cid] = [];
+            document.getElementById('bar-'+cid).style.display = 'none';
         }
-    };
-
-    window.sendText = (cid) => {
-        const i = document.getElementById('input-'+cid);
-        if(i.value.trim()) { db.ref('msgs/'+cid).push({s:me.uid, t:i.value, ts:Date.now()}); i.value=""; }
-    };
-
-    // --- POSTING FIX ---
-    window.previewPostImage = (i) => {
-        const file = i.files[0];
-        if(file) {
-            const r = new FileReader();
-            r.onload = (e) => {
-                selectedPostImg = e.target.result;
-                document.getElementById('post-image-preview').src = e.target.result;
-                document.getElementById('image-preview-container').style.display = 'block';
-            };
-            r.readAsDataURL(file);
-        }
-    };
-
-    window.removeSelectedImg = () => {
-        selectedPostImg = "";
-        document.getElementById('image-preview-container').style.display = 'none';
-        document.getElementById('post-media-input').value = "";
-    };
-
-    window.submitPost = () => {
-        const t = document.getElementById('post-input').value;
-        const btn = document.getElementById('post-btn');
-        if(!t && !selectedPostImg) return;
-        
-        btn.innerText = "Posting..."; btn.disabled = true;
-        
-        db.ref('posts').push({
-            uid: me.uid, n: me.displayName, p: me.photoURL, t: t, img: selectedPostImg, ts: Date.now()
-        }).then(() => {
-            document.getElementById('post-input').value = "";
-            removeSelectedImg();
-            btn.innerText = "Post"; btn.disabled = false;
-        });
-    };
-
-    function loadPosts() {
-        db.ref('posts').on('value', s => {
-            const feed = document.getElementById('main-feed'); feed.innerHTML = "";
-            let posts = [];
-            s.forEach(x => posts.push({id:x.key, ...x.val()}));
-            posts.reverse().forEach(p => {
-                feed.innerHTML += `
-                <div class="card">
-                    <div style="display:flex; gap:10px; margin-bottom:10px;">
-                        <img src="${p.p}" style="width:40px;height:40px;border-radius:50%;">
-                        <div><b>${p.n}</b><br><small style="color:gray;">${new Date(p.ts).toLocaleTimeString()}</small></div>
-                    </div>
-                    <p>${p.t}</p>${p.img ? `<img src="${p.img}" class="post-img-content">` : ''}
-                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px; cursor:pointer;" onclick="openChat('${p.uid}','${p.n}','${p.p}')">
-                        <i class="far fa-comment"></i> Chat
-                    </div>
-                </div>`;
-            });
-        });
     }
 
-    function loadOnlineUsers() {
-        db.ref('users').on('value', s => {
-            const list = document.getElementById('online-users-list'); list.innerHTML = "";
-            s.forEach(u => { if(u.key !== me.uid) list.innerHTML += `<div class="side-item" onclick="openChat('${u.key}','${u.val().n}','${u.val().p}')"><img src="${u.val().p}" class="side-img"><b>${u.val().n}</b></div>`; });
+    function handleRemove(cid) {
+        selectedMsgs[cid].forEach(mid => {
+            document.getElementById('msg-'+mid).style.display = 'none';
         });
+        selectedMsgs[cid] = [];
+        document.getElementById('bar-'+cid).style.display = 'none';
+    }
+
+    function sendChat(cid) {
+        let i = document.getElementById('in-'+cid);
+        if(i.value) {
+            db.ref('msgs/'+cid).push({s:me.uid, t:i.value, ts:Date.now()});
+            i.value = "";
+        }
     }
 </script>
 </body>
