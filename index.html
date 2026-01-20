@@ -34,7 +34,7 @@
         .chat-window { position: fixed; bottom: 0; right: 20px; width: 340px; height: 420px; background: white; border-radius: 12px 12px 0 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; z-index: 2000; }
         .chat-header { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; }
         .chat-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #f0f2f5; }
-        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; }
+        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; position: relative; cursor: pointer; }
         .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .msg-them { background: #e4e6e9; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
         .media-file { max-width: 100%; border-radius: 10px; display: block; margin-top: 5px; }
@@ -91,7 +91,7 @@
             <div class="post-actions">
                 <label style="color:var(--fb-blue); cursor:pointer; font-weight:600;">
                     <i class="fas fa-image"></i> Media 
-                    <input type="file" id="post-media-input" hidden onchange="previewPostMedia(this)" accept="image/*,video/*">
+                    <input type="file" id="post-media-input" hidden onchange="previewPostMedia(this)" accept="image/*">
                 </label>
                 <button onclick="submitPost()" style="background:var(--main); color:white; border:none; padding:8px 25px; border-radius:20px; cursor:pointer; font-weight:bold;">Post</button>
             </div>
@@ -132,18 +132,15 @@
 
     function closeModals(e) { if(e.target.className === 'overlay') e.target.style.display = 'none'; }
 
-    // --- FIX: SEARCH LOGIC ---
     function searchUsers(val) {
         if(!val || val.trim() === "") return;
         let res = document.getElementById('search-results');
         res.innerHTML = "Searching...";
         db.ref('users').once('value', s => {
             res.innerHTML = "";
-            let count = 0;
             s.forEach(u => {
                 let user = u.val();
                 if(user.n.toLowerCase().includes(val.toLowerCase()) && u.key !== me.uid) {
-                    count++;
                     res.innerHTML += `
                         <div class="search-item">
                             <div style="display:flex; align-items:center; gap:10px;">
@@ -154,7 +151,6 @@
                         </div>`;
                 }
             });
-            if(count === 0) res.innerHTML = "<p style='text-align:center; color:gray;'>No users found.</p>";
         });
     }
 
@@ -171,36 +167,25 @@
     function submitPost() {
         let t = document.getElementById('post-text').value;
         if(!t.trim() && !tempPostMedia) return;
-        db.ref('posts').push({ 
-            uid: me.uid, 
-            n: document.getElementById('my-name').innerText, 
-            p: document.getElementById('my-pic').src, 
-            t: t, 
-            m: tempPostMedia, 
-            ts: Date.now() 
-        });
-        document.getElementById('post-text').value = ""; 
-        document.getElementById('post-media-preview').style.display = 'none'; 
-        tempPostMedia = "";
+        db.ref('posts').push({ uid: me.uid, n: document.getElementById('my-name').innerText, p: document.getElementById('my-pic').src, t: t, m: tempPostMedia, ts: Date.now() });
+        document.getElementById('post-text').value = ""; document.getElementById('post-media-preview').style.display = 'none'; tempPostMedia = "";
     }
 
-    // --- FIX: POST LIST LOAD ---
     function loadPosts() {
         db.ref('posts').on('value', s => {
-            const list = document.getElementById('post-list');
-            list.innerHTML = ""; 
-            let postsArray = [];
-            s.forEach(x => { postsArray.push({key: x.key, val: x.val()}); });
-            postsArray.reverse().forEach(item => {
+            const list = document.getElementById('post-list'); list.innerHTML = ""; 
+            let posts = []; s.forEach(x => posts.push({id:x.key, val:x.val()}));
+            posts.reverse().forEach(item => {
                 let p = item.val;
-                let mTag = p.m ? (p.m.includes('video') ? `<video src="${p.m}" controls class="media-file"></video>` : `<img src="${p.m}" class="media-file">`) : "";
+                // Post se video tag hata diya gaya hai
+                let mTag = p.m ? `<img src="${p.m}" class="media-file">` : "";
                 list.innerHTML += `<div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <div style="display:flex; align-items:center; gap:10px;">
                             <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
                             <b>${p.n}</b>
                         </div>
-                        ${p.uid === me.uid ? `<i class="fas fa-trash-alt" style="color:#ddd; cursor:pointer;" onclick="db.ref('posts/${item.key}').remove()"></i>` : ''}
+                        ${p.uid === me.uid ? `<i class="fas fa-trash-alt" style="color:#ddd; cursor:pointer;" onclick="db.ref('posts/${item.id}').remove()"></i>` : ''}
                     </div>
                     <p style="margin:0 0 10px 0;">${p.t}</p>${mTag}
                     <hr style="opacity:0.1; margin:15px 0;">
@@ -210,7 +195,6 @@
         });
     }
 
-    // --- CHAT SYSTEM ---
     function openChat(uid, name) {
         document.getElementById('search-overlay').style.display = 'none';
         let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
@@ -220,7 +204,7 @@
             <div class="chat-header"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer; font-size:20px;">&times;</span></div>
             <div id="body-${chatID}" class="chat-body"></div>
             <div class="chat-footer">
-                <label style="color:var(--fb-blue); cursor:pointer;"><i class="fas fa-camera"></i><input type="file" hidden onchange="sendMedia('${chatID}', this)" accept="image/*"></label>
+                <label style="color:var(--fb-blue); cursor:pointer;"><i class="fas fa-paperclip"></i><input type="file" hidden onchange="sendMedia('${chatID}', this)" accept="image/*,video/*"></label>
                 <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendChat('${chatID}')">
                 <i class="fas fa-paper-plane" style="color:var(--fb-blue); cursor:pointer;" onclick="sendChat('${chatID}')"></i>
             </div>`;
@@ -230,7 +214,16 @@
             s.forEach(m => {
                 let d = m.val(); let isMe = d.s === me.uid;
                 let mDiv = document.createElement('div'); mDiv.className = `msg ${isMe?'msg-me':'msg-them'}`;
-                mDiv.innerHTML = d.type==='img' ? `<img src="${d.t}" class="media-file">` : d.t;
+                
+                // Chat Media Logic (Image and Video)
+                let content = d.t;
+                if(d.type === 'img') content = `<img src="${d.t}" class="media-file">`;
+                if(d.type === 'vid') content = `<video src="${d.t}" controls class="media-file"></video>`;
+                
+                mDiv.innerHTML = content;
+                // Delete logic: click to delete if it's my message
+                if(isMe) mDiv.onclick = () => { if(confirm("Delete message?")) db.ref('msgs/'+chatID+'/'+m.key).remove(); };
+                
                 b.appendChild(mDiv);
             });
             b.scrollTop = b.scrollHeight;
@@ -243,8 +236,11 @@
     }
 
     function sendMedia(cid, input) {
-        let r = new FileReader(); r.onload = e => db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type:'img', ts: Date.now()});
-        r.readAsDataURL(input.files[0]);
+        let file = input.files[0];
+        let type = file.type.startsWith('video') ? 'vid' : 'img';
+        let r = new FileReader(); 
+        r.onload = e => db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type: type, ts: Date.now()});
+        r.readAsDataURL(file);
     }
 </script>
 </body>
