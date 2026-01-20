@@ -51,8 +51,8 @@
         .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 10px 15px; border-radius: 25px; outline: none; }
         .media-file { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
         
-        /* Fixed Delete Post Button Style */
-        .del-post-btn { position: absolute; top: 15px; right: 15px; color: #ccc; cursor: pointer; font-size: 18px; transition: 0.3s; padding: 5px; }
+        /* Fixed Post Delete Button Style */
+        .del-post-btn { position: absolute; top: 15px; right: 15px; color: #ccc; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .del-post-btn:hover { color: #ff4d4d; }
     </style>
 </head>
@@ -161,6 +161,7 @@
                 let p = x.val();
                 let delBtn = p.uid === me.uid ? `<i class="fas fa-trash del-post-btn" onclick="deletePost('${x.key}')"></i>` : "";
                 let mediaTag = p.m ? `<img src="${p.m}" class="media-file">` : "";
+                
                 let postHTML = `<div class="card">${delBtn}
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                         <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
