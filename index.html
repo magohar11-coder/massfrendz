@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Massfrendz | Secure Portal</title>
+    <title>Massfrendz | Gohar Pro Max</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -14,9 +14,6 @@
         body { background: var(--bg); color: var(--text-dark); font-family: 'Segoe UI', Arial; margin: 0; padding: 0; overflow-x: hidden; }
         
         #login-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        .login-card { text-align: center; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: white; }
-        .google-btn { background: #4285F4; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; margin: 20px auto; }
-        
         #main-app { display: none; }
 
         nav { position: fixed; top: 0; width: 100%; height: 56px; background: var(--card); border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1000; box-sizing: border-box; }
@@ -24,31 +21,37 @@
         .main-content { margin-left: 300px; margin-right: 320px; margin-top: 72px; padding: 0 16px; }
         .card { background: var(--card); border-radius: 8px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 16px; max-width: 550px; margin-inline: auto; }
         .post-img-content { width: 100%; border-radius: 8px; margin-top: 10px; }
+        
+        /* Chat Styling */
+        .chat-float { position: fixed; bottom: 0; right: 320px; width: 300px; height: 420px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
+        .chat-header { background: var(--main); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-msgs-area { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #f9f9f9; }
+        
+        /* Selection UI */
+        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 80%; font-size: 14px; cursor: pointer; position: relative; transition: 0.2s; border: 2px solid transparent; }
+        .msg-selected { border-color: #1877f2; background: #e7f3ff !important; color: black !important; box-shadow: 0 0 5px rgba(24, 119, 242, 0.5); }
+        
+        .delete-bar { background: #1877f2; color: white; padding: 8px 15px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
+        
+        .chat-input-area { padding: 8px; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: center; }
+        .chat-input-area input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
+        
         .online-panel { position: fixed; right: 0; top: 56px; width: 300px; padding: 16px; border-left: 1px solid #ddd; height: 100vh; overflow-y: auto; }
         .side-item { display: flex; align-items: center; gap: 12px; padding: 8px; cursor: pointer; border-radius: 8px; }
         .side-item:hover { background: #e4e6e9; }
         .side-img { width: 36px; height: 36px; border-radius: 50%; }
-        
-        .chat-float { position: fixed; bottom: 0; right: 320px; width: 300px; height: 420px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
-        .chat-header { background: var(--main); color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .chat-msgs-area { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; background: #f9f9f9; }
-        .chat-input-area { padding: 8px; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: center; }
-        .chat-input-area input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
-        
-        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 80%; font-size: 14px; position: relative; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
-        .msg-selected { border-color: #1877f2; background: #e7f3ff !important; color: black !important; }
-        .delete-bar { background: #1877f2; color: white; padding: 8px 15px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
-        
+
         @media (max-width: 900px) { .sidebar, .online-panel { display: none; } .main-content { margin: 70px 10px; } .chat-float { right: 10px; width: 90%; } }
     </style>
 </head>
 <body>
 
 <div id="login-screen">
-    <div class="login-card">
-        <h1 style="color: var(--main); margin-bottom: 5px;">MASSFRENDZ</h1>
-        <p style="color: #65676b;">Connect with friends securely.</p>
-        <button class="google-btn" onclick="login()"><i class="fab fa-google"></i> Sign in with Google</button>
+    <div class="card" style="text-align:center;">
+        <h1 style="color:var(--main);">MASSFRENDZ</h1>
+        <button onclick="login()" style="background:#4285F4; color:white; border:none; padding:12px 24px; border-radius:6px; cursor:pointer; font-weight:bold;">
+            <i class="fab fa-google"></i> Sign in with Google
+        </button>
     </div>
 </div>
 
@@ -73,7 +76,7 @@
                 <i class="fas fa-times" onclick="removeSelectedImg()" style="position:absolute; top:10px; right:10px; color:red; cursor:pointer; background:white; border-radius:50%; padding:5px;"></i>
             </div>
             <div style="margin-top:10px; display:flex; justify-content:space-between;">
-                <label style="color:#45bd62; cursor:pointer;"><i class="fas fa-image"></i> Media<input type="file" id="post-media-input" hidden accept="image/*,video/*" onchange="previewPostImage(this)"></label>
+                <label style="color:#45bd62; cursor:pointer;"><i class="fas fa-image"></i> Media<input type="file" id="post-media-input" hidden onchange="previewPostImage(this)"></label>
                 <button id="post-btn" onclick="submitPost()" style="background:var(--main); color:white; border:none; padding:5px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Post</button>
             </div>
         </div>
@@ -91,7 +94,7 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
     
-    let me = null; let selectedPostImg = ""; let selectedMsgs = {};
+    let me = null; let selectedPostImg = ""; let activeChatSelectedMsgs = {};
 
     auth.onAuthStateChanged(user => {
         if(user) {
@@ -111,32 +114,33 @@
     function logout() { auth.signOut().then(() => location.reload()); }
 
     function updateUI() {
-        const p = me.photoURL || 'https://via.placeholder.com/40';
-        document.getElementById('user-avatar').src = p;
-        document.getElementById('side-dp').src = p;
+        document.getElementById('user-avatar').src = me.photoURL;
+        document.getElementById('side-dp').src = me.photoURL;
         document.getElementById('side-name').innerText = me.displayName;
     }
 
-    // --- CHAT & MULTI-DELETE ---
+    // --- CHAT WITH SELECTION & DELETE ---
     window.openChat = (uid, name, img) => {
         const chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
         if(document.getElementById('chat-window-'+chatID)) return;
         
+        activeChatSelectedMsgs[chatID] = [];
         const div = document.createElement('div');
         div.id = 'chat-window-'+chatID;
         div.className = 'chat-float';
         div.innerHTML = `
             <div id="del-bar-${chatID}" class="delete-bar">
-                <span id="del-count-${chatID}">0 selected</span>
-                <i class="fas fa-trash" style="cursor:pointer;" onclick="deleteSelectedMsgs('${chatID}')"></i>
+                <span id="del-count-${chatID}">0 Selected</span>
+                <div style="display:flex; gap:10px;">
+                    <i class="fas fa-trash" title="Unsend for everyone" onclick="deleteForEveryone('${chatID}')"></i>
+                </div>
             </div>
             <div class="chat-header">
-                <div style="display:flex; align-items:center; gap:8px;"><img src="${img}" style="width:24px;height:24px;border-radius:50%;"><b>${name}</b></div>
+                <b>${name}</b>
                 <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;">&times;</span>
             </div>
             <div id="msgs-${chatID}" class="chat-msgs-area"></div>
             <div class="chat-input-area">
-                <label style="cursor:pointer; color:var(--main);"><i class="fas fa-paperclip"></i><input type="file" hidden accept="image/*,video/*" onchange="sendMedia('${chatID}', this)"></label>
                 <input type="text" id="input-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendText('${chatID}')">
             </div>`;
         document.body.appendChild(div);
@@ -147,68 +151,58 @@
             s.forEach(m => {
                 const d = m.val(); const isMe = d.s === me.uid;
                 const msgDiv = document.createElement('div');
-                msgDiv.id = 'msg-'+m.key;
-                msgDiv.className = `msg-bubble ${selectedMsgs[m.key] ? 'msg-selected' : ''}`;
+                msgDiv.id = `msg-${m.key}`;
+                msgDiv.className = `msg-bubble`;
                 msgDiv.style = `background:${isMe?'var(--main)':'#e4e6e9'}; color:${isMe?'white':'black'}; align-self:${isMe?'flex-end':'flex-start'};`;
+                msgDiv.innerText = d.t;
                 
-                if(d.type === 'img') msgDiv.innerHTML = `<img src="${d.t}" style="width:100%; border-radius:10px;">`;
-                else if(d.type === 'video') msgDiv.innerHTML = `<video src="${d.t}" controls style="width:100%;"></video>`;
-                else msgDiv.innerText = d.t;
-
-                msgDiv.onclick = () => toggleMsgSelection(chatID, m.key, isMe);
+                // Click to Select
+                msgDiv.onclick = () => toggleSelect(chatID, m.key, isMe);
                 box.appendChild(msgDiv);
             });
             box.scrollTop = box.scrollHeight;
         });
     };
 
-    function toggleMsgSelection(cid, mid, isMe) {
-        if(!isMe) return; // Sirf apne message select honge
-        if(selectedMsgs[mid]) delete selectedMsgs[mid];
-        else selectedMsgs[mid] = true;
+    function toggleSelect(cid, mid, isMe) {
+        if(!isMe) return; // Sirf apne messages unsend ho sakte hain
+        const idx = activeChatSelectedMsgs[cid].indexOf(mid);
+        if(idx > -1) activeChatSelectedMsgs[cid].splice(idx, 1);
+        else activeChatSelectedMsgs[cid].push(mid);
 
-        const count = Object.keys(selectedMsgs).length;
-        const bar = document.getElementById('del-bar-'+cid);
-        bar.style.display = count > 0 ? 'flex' : 'none';
-        document.getElementById('del-count-'+cid).innerText = count + " selected";
-        
         const el = document.getElementById('msg-'+mid);
-        if(el) el.classList.toggle('msg-selected');
+        el.classList.toggle('msg-selected');
+
+        const bar = document.getElementById('del-bar-'+cid);
+        const count = activeChatSelectedMsgs[cid].length;
+        bar.style.display = count > 0 ? 'flex' : 'none';
+        document.getElementById('del-count-'+cid).innerText = count + " Selected";
     }
 
-    window.deleteSelectedMsgs = (cid) => {
-        if(confirm("Delete selected messages?")) {
-            Object.keys(selectedMsgs).forEach(mid => db.ref('msgs/'+cid+'/'+mid).remove());
-            selectedMsgs = {};
+    window.deleteForEveryone = (cid) => {
+        if(confirm("Unsend for everyone?")) {
+            activeChatSelectedMsgs[cid].forEach(mid => db.ref('msgs/'+cid+'/'+mid).remove());
+            activeChatSelectedMsgs[cid] = [];
             document.getElementById('del-bar-'+cid).style.display = 'none';
         }
     };
 
     window.sendText = (cid) => {
         const i = document.getElementById('input-'+cid);
-        if(i.value.trim()) { db.ref('msgs/'+cid).push({s:me.uid, t:i.value, type:'text', ts:Date.now()}); i.value=""; }
+        if(i.value.trim()) { db.ref('msgs/'+cid).push({s:me.uid, t:i.value, ts:Date.now()}); i.value=""; }
     };
 
-    window.sendMedia = (cid, inp) => {
-        const file = inp.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            let type = file.type.startsWith('video') ? 'video' : 'img';
-            db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type:type, ts:Date.now()});
-        };
-        reader.readAsDataURL(file);
-    };
-
-    // --- POSTING FIXES ---
+    // --- POSTING FIX ---
     window.previewPostImage = (i) => {
-        if(i.files[0]) {
+        const file = i.files[0];
+        if(file) {
             const r = new FileReader();
             r.onload = (e) => {
                 selectedPostImg = e.target.result;
                 document.getElementById('post-image-preview').src = e.target.result;
                 document.getElementById('image-preview-container').style.display = 'block';
             };
-            r.readAsDataURL(i.files[0]);
+            r.readAsDataURL(file);
         }
     };
 
@@ -222,28 +216,34 @@
         const t = document.getElementById('post-input').value;
         const btn = document.getElementById('post-btn');
         if(!t && !selectedPostImg) return;
+        
         btn.innerText = "Posting..."; btn.disabled = true;
         
-        db.ref('posts').push({ uid: me.uid, n: me.displayName, p: me.photoURL, t: t, img: selectedPostImg, ts: Date.now() })
-        .then(() => {
-            document.getElementById('post-input').value = ""; 
+        db.ref('posts').push({
+            uid: me.uid, n: me.displayName, p: me.photoURL, t: t, img: selectedPostImg, ts: Date.now()
+        }).then(() => {
+            document.getElementById('post-input').value = "";
             removeSelectedImg();
             btn.innerText = "Post"; btn.disabled = false;
-        }).catch(e => { alert(e.message); btn.innerText = "Post"; btn.disabled = false; });
+        });
     };
 
     function loadPosts() {
         db.ref('posts').on('value', s => {
             const feed = document.getElementById('main-feed'); feed.innerHTML = "";
-            let data = []; s.forEach(x => data.push({id:x.key, ...x.val()}));
-            data.reverse().forEach(p => {
-                feed.innerHTML += `<div class="card">
+            let posts = [];
+            s.forEach(x => posts.push({id:x.key, ...x.val()}));
+            posts.reverse().forEach(p => {
+                feed.innerHTML += `
+                <div class="card">
                     <div style="display:flex; gap:10px; margin-bottom:10px;">
                         <img src="${p.p}" style="width:40px;height:40px;border-radius:50%;">
                         <div><b>${p.n}</b><br><small style="color:gray;">${new Date(p.ts).toLocaleTimeString()}</small></div>
                     </div>
-                    <p>${p.t}</p>${p.img ? (p.img.includes('video') ? `<video src="${p.img}" controls class="post-img-content"></video>` : `<img src="${p.img}" class="post-img-content">`) : ''}
-                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px; cursor:pointer;" onclick="openChat('${p.uid}','${p.n}','${p.p}')"><i class="far fa-comment"></i> Chat</div>
+                    <p>${p.t}</p>${p.img ? `<img src="${p.img}" class="post-img-content">` : ''}
+                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px; cursor:pointer;" onclick="openChat('${p.uid}','${p.n}','${p.p}')">
+                        <i class="far fa-comment"></i> Chat
+                    </div>
                 </div>`;
             });
         });
