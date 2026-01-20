@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Massfrendz | Advanced Chat</title>
+    <title>Massfrendz | Advanced Media Portal</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -13,7 +13,6 @@
         :root { --main: #00c853; --fb-blue: #1877f2; --bg: #f0f2f5; }
         body { background: var(--bg); font-family: 'Segoe UI', Arial; margin: 0; }
         
-        /* Layout */
         nav { position: fixed; top: 0; width: 100%; height: 56px; background: white; border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1000; box-sizing: border-box; }
         .main-content { margin-top: 70px; display: flex; justify-content: center; }
         .feed { width: 100%; max-width: 500px; padding: 10px; }
@@ -23,19 +22,21 @@
         .chat-window { position: fixed; bottom: 0; right: 20px; width: 330px; height: 450px; background: white; border-radius: 8px 8px 0 0; box-shadow: 0 12px 28px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
         .chat-header { background: white; border-bottom: 1px solid #ddd; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
         
-        /* Selection Action Bar */
         .action-bar { background: var(--fb-blue); color: white; padding: 8px 12px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
-        .action-btn { cursor: pointer; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; transition: 0.3s; }
-        .action-btn:hover { background: rgba(255,255,255,0.4); }
+        .action-btn { cursor: pointer; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; }
 
         .chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; background: #fff; }
-        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; position: relative; }
+        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; position: relative; word-wrap: break-word; }
         .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; }
         .msg-them { background: #e4e6e9; color: black; align-self: flex-start; }
         .msg-selected { border-color: #ffc107 !important; background: #fff9c4 !important; color: black !important; }
 
-        .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 8px; }
-        .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 8px 15px; border-radius: 20px; outline: none; }
+        .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 8px; align-items: center; }
+        .chat-footer input[type="text"] { flex: 1; border: none; background: #f0f2f5; padding: 8px 15px; border-radius: 20px; outline: none; }
+        
+        .media-preview { width: 100%; border-radius: 8px; margin-top: 10px; display: none; }
+        .post-img { width: 100%; border-radius: 8px; margin-top: 10px; }
+        .chat-img { max-width: 200px; border-radius: 10px; display: block; }
     </style>
 </head>
 <body>
@@ -54,7 +55,11 @@
         <div class="feed">
             <div class="card">
                 <textarea id="post-text" placeholder="What's on your mind?" style="width:100%; border:none; background:#f0f2f5; padding:10px; border-radius:8px; outline:none; resize:none;"></textarea>
-                <button id="post-btn" onclick="submitPost()" style="margin-top:10px; width:100%; background:var(--main); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;">Post</button>
+                <img id="post-img-prev" class="media-preview">
+                <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <label style="color:var(--main); cursor:pointer;"><i class="fas fa-image"></i> Photo/Video <input type="file" id="post-file" hidden onchange="previewFile(this, 'post-img-prev')"></label>
+                    <button id="post-btn" onclick="submitPost()" style="background:var(--main); color:white; border:none; padding:8px 20px; border-radius:5px; cursor:pointer;">Post</button>
+                </div>
             </div>
             <div id="post-list"></div>
         </div>
@@ -67,7 +72,8 @@
     const auth = firebase.auth(); const db = firebase.database();
 
     let me = null;
-    let selectedMsgs = {}; // Store selected IDs per chat
+    let selectedMsgs = {};
+    let postMediaData = "";
 
     auth.onAuthStateChanged(user => {
         if(user) {
@@ -82,14 +88,30 @@
     function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     function logout() { auth.signOut().then(() => location.reload()); }
 
+    // --- Media Preview Helper ---
+    function previewFile(input, targetID) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                postMediaData = e.target.result;
+                const prev = document.getElementById(targetID);
+                prev.src = e.target.result;
+                prev.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
     // --- Post Logic ---
     function submitPost() {
         let t = document.getElementById('post-text').value;
-        if(!t) return;
+        if(!t && !postMediaData) return;
         document.getElementById('post-btn').innerText = "Posting...";
-        db.ref('posts').push({uid:me.uid, n:me.displayName, p:me.photoURL, t:t, ts:Date.now()})
+        db.ref('posts').push({uid:me.uid, n:me.displayName, p:me.photoURL, t:t, img:postMediaData, ts:Date.now()})
         .then(() => {
             document.getElementById('post-text').value = "";
+            document.getElementById('post-img-prev').style.display = 'none';
+            postMediaData = "";
             document.getElementById('post-btn').innerText = "Post";
         });
     }
@@ -101,17 +123,17 @@
                 let p = x.val();
                 list.innerHTML = `<div class="card">
                     <b>${p.n}</b><p>${p.t}</p>
-                    <button onclick="openChat('${p.uid}','${p.n}')" style="background:none; border:1px solid #ddd; padding:5px; cursor:pointer; border-radius:4px;">Message</button>
+                    ${p.img ? `<img src="${p.img}" class="post-img">` : ''}
+                    <button onclick="openChat('${p.uid}','${p.n}')" style="margin-top:10px; background:none; border:1px solid #ddd; padding:5px; cursor:pointer; border-radius:4px;">Message</button>
                 </div>` + list.innerHTML;
             });
         });
     }
 
-    // --- THE ULTIMATE CHAT SYSTEM ---
+    // --- CHAT SYSTEM WITH MEDIA ---
     function openChat(uid, name) {
         let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
         if(document.getElementById('win-'+chatID)) return;
-
         selectedMsgs[chatID] = [];
 
         let win = document.createElement('div');
@@ -131,11 +153,11 @@
             </div>
             <div id="body-${chatID}" class="chat-body"></div>
             <div class="chat-footer">
+                <label style="cursor:pointer; color:var(--fb-blue); font-size:18px;"><i class="fas fa-paperclip"></i><input type="file" hidden onchange="sendMediaChat('${chatID}', this)"></label>
                 <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')">
             </div>`;
         document.body.appendChild(win);
 
-        // Listen for Messages
         db.ref('msgs/'+chatID).on('value', s => {
             let body = document.getElementById('body-'+chatID); 
             if(!body) return;
@@ -145,11 +167,14 @@
                 let mDiv = document.createElement('div');
                 mDiv.id = 'msg-' + m.key;
                 mDiv.className = `msg-bubble ${isMe ? 'msg-me':'msg-them'}`;
-                mDiv.innerText = d.t;
                 
-                // Selection Trigger
+                if(d.type === 'media') {
+                    mDiv.innerHTML = `<img src="${d.t}" class="chat-img">`;
+                } else {
+                    mDiv.innerText = d.t;
+                }
+                
                 mDiv.onclick = () => toggleMsg(m.key, chatID, isMe);
-                
                 body.appendChild(mDiv);
             });
             body.scrollTop = body.scrollHeight;
@@ -159,7 +184,6 @@
     function toggleMsg(mid, cid, isMe) {
         let idx = selectedMsgs[cid].indexOf(mid);
         let el = document.getElementById('msg-'+mid);
-
         if(idx > -1) {
             selectedMsgs[cid].splice(idx, 1);
             el.classList.remove('msg-selected');
@@ -167,8 +191,6 @@
             selectedMsgs[cid].push(mid);
             el.classList.add('msg-selected');
         }
-
-        // Show/Hide Bar
         let bar = document.getElementById('bar-'+cid);
         bar.style.display = selectedMsgs[cid].length > 0 ? 'flex' : 'none';
         document.getElementById('count-'+cid).innerText = selectedMsgs[cid].length + " Selected";
@@ -184,7 +206,8 @@
 
     function handleRemove(cid) {
         selectedMsgs[cid].forEach(mid => {
-            document.getElementById('msg-'+mid).style.display = 'none';
+            let el = document.getElementById('msg-'+mid);
+            if(el) el.style.display = 'none';
         });
         selectedMsgs[cid] = [];
         document.getElementById('bar-'+cid).style.display = 'none';
@@ -193,8 +216,18 @@
     function sendChat(cid) {
         let i = document.getElementById('in-'+cid);
         if(i.value) {
-            db.ref('msgs/'+cid).push({s:me.uid, t:i.value, ts:Date.now()});
+            db.ref('msgs/'+cid).push({s:me.uid, t:i.value, type:'text', ts:Date.now()});
             i.value = "";
+        }
+    }
+
+    function sendMediaChat(cid, input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type:'media', ts:Date.now()});
+            };
+            reader.readAsDataURL(input.files[0]);
         }
     }
 </script>
