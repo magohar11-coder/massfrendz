@@ -22,15 +22,12 @@
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: none; justify-content: center; align-items: center; overflow-y: auto; }
         .modal { background: white; width: 95%; max-width: 500px; border-radius: 15px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
         
-        /* Profile Page Styling */
         .profile-hero { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 15px; }
-        .profile-hero img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--main); object-fit: cover; cursor: pointer; }
+        .profile-hero img { width: 140px; height: 140px; border-radius: 50%; border: 4px solid var(--main); object-fit: cover; }
+        
         .detail-box { text-align: left; background: #f9f9f9; padding: 15px; border-radius: 10px; margin-top: 10px; }
         .detail-item { margin-bottom: 8px; font-size: 15px; display: flex; align-items: center; gap: 10px; color: #444; }
-        .edit-input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; }
-
-        .search-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; }
-        .search-item img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .edit-input { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
 
         .container { margin-top: 80px; display: flex; flex-direction: column; align-items: center; padding: 10px; }
         .feed { width: 100%; max-width: 550px; }
@@ -42,68 +39,60 @@
         .chat-window { position: fixed; bottom: 0; right: 20px; width: 340px; height: 420px; background: white; border-radius: 12px 12px 0 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; z-index: 2000; }
         .chat-header { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; }
         .chat-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #f0f2f5; }
-        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; position: relative; cursor: pointer; transition: 0.2s; }
+        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; }
         .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .msg-them { background: #e4e6e9; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
         .media-file { max-width: 100%; border-radius: 10px; display: block; margin-top: 5px; }
-        
         .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 8px; background: white; }
         .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
-        .edit-pic-label { display: block; width: 120px; height: 120px; margin: 0 auto; position: relative; cursor: pointer; }
-        .edit-pic-label i { position: absolute; bottom: 5px; right: 5px; background: white; border-radius: 50%; padding: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); color: var(--fb-blue); }
+        
+        .search-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .search-item img { width: 40px; height: 40px; border-radius: 50%; }
     </style>
 </head>
 <body>
 
+<audio id="beep-sound" src="https://www.soundjay.com/buttons/beep-07a.mp3" preload="auto"></audio>
+
 <div id="profile-overlay" class="overlay" onclick="closeModals(event)">
     <div class="modal">
         <span onclick="document.getElementById('profile-overlay').style.display='none'" style="position:absolute; top:15px; right:20px; cursor:pointer; font-size:25px; color:#999;">&times;</span>
-        
         <div class="profile-hero">
-            <label class="edit-pic-label" id="pic-edit-label">
+            <label id="pic-edit-label" style="cursor: pointer; position: relative; display: inline-block;">
                 <img id="prof-large-pic" src="">
-                <i class="fas fa-camera" id="cam-icon"></i>
+                <i class="fas fa-camera" id="cam-icon" style="position: absolute; bottom: 10px; right: 10px; background: white; padding: 8px; border-radius: 50%; color: var(--fb-blue); border: 1px solid #ddd;"></i>
                 <input type="file" id="pic-upload-input" hidden onchange="updateProfilePic(this)" accept="image/*">
             </label>
-            <h2 id="prof-display-name" style="margin: 10px 0 5px 0;"></h2>
-            <p id="prof-status" style="color: #666; margin: 0;">Massfrendz Member</p>
+            <h2 id="prof-display-name" style="margin: 10px 0;"></h2>
         </div>
-
         <div class="detail-box">
-            <h4 style="margin-top:0;"><i class="fas fa-info-circle"></i> Personal Details</h4>
+            <h4><i class="fas fa-info-circle"></i> Personal Details</h4>
             <div class="detail-item"><i class="fas fa-birthday-cake"></i> Born: <span id="view-dob">Not set</span></div>
             <div class="detail-item"><i class="fas fa-school"></i> School: <span id="view-school">Not set</span></div>
             <div class="detail-item"><i class="fas fa-map-marker-alt"></i> City: <span id="view-city">Not set</span></div>
-            
-            <div id="edit-details-section" style="display:none; margin-top:15px; border-top:1px solid #ddd; padding-top:15px;">
-                <input type="text" id="edit-name" class="edit-input" placeholder="Update Name">
-                <input type="text" id="edit-dob" class="edit-input" placeholder="Date of Birth (e.g. 15 Aug 2005)">
-                <input type="text" id="edit-school" class="edit-input" placeholder="School/College Name">
-                <input type="text" id="edit-city" class="edit-input" placeholder="Your City">
-                <button onclick="saveProfileDetails()" style="width:100%; margin-top:10px; background:var(--main); color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Save Changes</button>
+            <div id="edit-details-section" style="display:none; border-top:1px solid #ddd; padding-top:10px;">
+                <input type="text" id="edit-name" class="edit-input" placeholder="Full Name">
+                <input type="text" id="edit-dob" class="edit-input" placeholder="Date of Birth">
+                <input type="text" id="edit-school" class="edit-input" placeholder="School">
+                <input type="text" id="edit-city" class="edit-input" placeholder="City">
+                <button onclick="saveProfileDetails()" style="width:100%; background:var(--main); color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Save Changes</button>
             </div>
         </div>
-
         <div id="me-only-actions" style="display:none; margin-top:15px;">
-            <button onclick="logout()" style="background:#ff4d4d; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold; width:100%;">Logout Account</button>
+            <button onclick="logout()" style="background:#ff4d4d; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold; width:100%;">Logout</button>
         </div>
     </div>
 </div>
 
 <div id="search-overlay" class="overlay" onclick="closeModals(event)">
     <div class="modal">
-        <div style="display:flex; gap:10px; align-items:center;">
-            <input type="text" id="search-input" placeholder="Enter friend's name..." 
-                   onkeypress="if(event.key==='Enter') searchUsers(this.value)" 
-                   style="width:100%; padding:10px 15px; border-radius:20px; border:1px solid #ddd; outline:none;">
-            <i class="fas fa-search" style="color:var(--fb-blue); cursor:pointer;" onclick="searchUsers(document.getElementById('search-input').value)"></i>
-        </div>
-        <div id="search-results" style="margin-top:15px; min-height: 50px;"></div>
+        <input type="text" id="search-input" class="edit-input" placeholder="Search friends..." oninput="searchUsers(this.value)">
+        <div id="search-results" style="margin-top:10px;"></div>
     </div>
 </div>
 
 <div id="login-screen" style="height:100vh; display:flex; align-items:center; justify-content:center;">
-    <button onclick="login()" style="padding:15px 30px; background:var(--fb-blue); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size: 16px;">Login with Google</button>
+    <button onclick="login()" style="padding:15px 30px; background:var(--fb-blue); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Login with Google</button>
 </div>
 
 <div id="main-app" style="display:none;">
@@ -160,7 +149,6 @@
     function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     function logout() { if(confirm("Logout?")) auth.signOut().then(() => location.reload()); }
 
-    // --- Profile System ---
     function viewUserProfile(uid) {
         db.ref('users/'+uid).once('value', s => {
             const data = s.val();
@@ -169,14 +157,9 @@
             document.getElementById('view-dob').innerText = data.dob || "Not set";
             document.getElementById('view-school').innerText = data.school || "Not set";
             document.getElementById('view-city').innerText = data.city || "Not set";
-
-            // If it's my own profile, show edit options
             const isMe = (uid === me.uid);
             document.getElementById('edit-details-section').style.display = isMe ? 'block' : 'none';
             document.getElementById('me-only-actions').style.display = isMe ? 'block' : 'none';
-            document.getElementById('pic-upload-input').disabled = !isMe;
-            document.getElementById('cam-icon').style.display = isMe ? 'block' : 'none';
-            
             if(isMe) {
                 document.getElementById('edit-name').value = data.n;
                 document.getElementById('edit-dob').value = data.dob || "";
@@ -194,78 +177,63 @@
             school: document.getElementById('edit-school').value,
             city: document.getElementById('edit-city').value
         };
-        db.ref('users/'+me.uid).update(updates).then(() => {
-            alert("Profile Updated!");
-            viewUserProfile(me.uid);
-        });
+        db.ref('users/'+me.uid).update(updates).then(() => { alert("Saved!"); viewUserProfile(me.uid); });
     }
 
     function updateProfilePic(input) {
         if(!input.files[0]) return;
         let r = new FileReader();
-        r.onload = e => db.ref('users/'+me.uid).update({ p: e.target.result }).then(() => {
-            document.getElementById('prof-large-pic').src = e.target.result;
-            alert("Picture Updated!");
-        });
-        r.readAsDataURL(input.files[0]);
-    }
-
-    function closeModals(e) { if(e.target.className === 'overlay') e.target.style.display = 'none'; }
-
-    function searchUsers(val) {
-        if(!val || val.trim() === "") return;
-        let res = document.getElementById('search-results');
-        res.innerHTML = "Searching...";
-        db.ref('users').once('value', s => {
-            res.innerHTML = "";
-            s.forEach(u => {
-                let user = u.val();
-                if(user.n.toLowerCase().includes(val.toLowerCase()) && u.key !== me.uid) {
-                    res.innerHTML += `<div class="search-item">
-                            <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="viewUserProfile('${u.key}')">
-                                <img src="${user.p}">
-                                <b>${user.n}</b>
-                            </div>
-                            <button onclick="openChat('${u.key}','${user.n}')" style="background:var(--fb-blue); color:white; border:none; border-radius:20px; padding:6px 15px; cursor:pointer;">Message</button>
-                        </div>`;
-                }
-            });
-        });
-    }
-
-    function previewPostMedia(input) {
-        let r = new FileReader(); 
-        r.onload = e => { tempPostMedia = e.target.result; let p = document.getElementById('post-media-preview'); p.src = tempPostMedia; p.style.display = 'block'; };
+        r.onload = e => db.ref('users/'+me.uid).update({ p: e.target.result });
         r.readAsDataURL(input.files[0]);
     }
 
     function submitPost() {
         let t = document.getElementById('post-text').value;
         if(!t.trim() && !tempPostMedia) return;
-        db.ref('posts').push({ uid: me.uid, n: document.getElementById('my-name').innerText, p: document.getElementById('my-pic').src, t: t, m: tempPostMedia, ts: Date.now() });
-        document.getElementById('post-text').value = ""; document.getElementById('post-media-preview').style.display = 'none'; tempPostMedia = "";
+        db.ref('posts').push({
+            uid: me.uid, n: document.getElementById('my-name').innerText,
+            p: document.getElementById('my-pic').src, t: t, m: tempPostMedia, ts: Date.now()
+        }).then(() => {
+            document.getElementById('post-text').value = "";
+            document.getElementById('post-media-preview').style.display = 'none';
+            tempPostMedia = "";
+        });
     }
 
     function loadPosts() {
         db.ref('posts').on('value', s => {
-            const list = document.getElementById('post-list'); list.innerHTML = ""; 
-            let postsArr = []; s.forEach(x => postsArr.push({id:x.key, val:x.val()}));
-            postsArr.reverse().forEach(item => {
+            const list = document.getElementById('post-list'); list.innerHTML = "";
+            let posts = []; s.forEach(x => posts.push({id:x.key, val:x.val()}));
+            posts.reverse().forEach(item => {
                 let p = item.val;
-                let mTag = p.m ? `<img src="${p.m}" class="media-file">` : "";
                 list.innerHTML += `<div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="viewUserProfile('${p.uid}')">
-                            <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                            <b>${p.n}</b>
-                        </div>
-                        ${p.uid === me.uid ? `<i class="fas fa-trash-alt" style="color:#ddd; cursor:pointer;" onclick="db.ref('posts/${item.id}').remove()"></i>` : ''}
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; cursor:pointer;" onclick="viewUserProfile('${p.uid}')">
+                        <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                        <b>${p.n}</b>
                     </div>
-                    <p style="margin:0 0 10px 0;">${p.t}</p>${mTag}
-                    <hr style="opacity:0.1; margin:15px 0;">
-                    <button onclick="openChat('${p.uid}','${p.n}')" style="background:#f0f2f5; color:#333; border:none; padding:10px; border-radius:8px; cursor:pointer; width:100%; font-weight:600;">Send Message</button>
+                    <p>${p.t}</p>${p.m ? `<img src="${p.m}" class="media-file">` : ""}
+                    <button onclick="openChat('${p.uid}','${p.n}')" style="background:#f0f2f5; border:none; padding:10px; border-radius:8px; cursor:pointer; width:100%; font-weight:600; margin-top:10px;">Message</button>
                 </div>`;
             });
+        });
+    }
+
+    function searchUsers(val) {
+        if(!val) return document.getElementById('search-results').innerHTML = "";
+        db.ref('users').once('value', s => {
+            let html = "";
+            s.forEach(u => {
+                let d = u.val();
+                if(d.n.toLowerCase().includes(val.toLowerCase()) && u.key !== me.uid) {
+                    html += `<div class="search-item">
+                        <div onclick="viewUserProfile('${u.key}')" style="cursor:pointer; display:flex; align-items:center; gap:10px;">
+                            <img src="${d.p}"><b>${d.n}</b>
+                        </div>
+                        <button onclick="openChat('${u.key}','${d.n}')" style="background:var(--fb-blue); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Chat</button>
+                    </div>`;
+                }
+            });
+            document.getElementById('search-results').innerHTML = html;
         });
     }
 
@@ -274,48 +242,39 @@
         let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
         if(document.getElementById('win-'+chatID)) return;
         let win = document.createElement('div'); win.id = 'win-'+chatID; win.className = 'chat-window';
-        win.innerHTML = `<div class="chat-header"><b onclick="viewUserProfile('${uid}')" style="cursor:pointer">${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer; font-size:20px;">&times;</span></div>
+        win.innerHTML = `<div class="chat-header"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer;">&times;</span></div>
             <div id="body-${chatID}" class="chat-body"></div>
             <div class="chat-footer">
-                <label style="color:var(--fb-blue); cursor:pointer;"><i class="fas fa-paperclip"></i><input type="file" hidden onchange="sendMedia('${chatID}', this)" accept="image/*,video/*"></label>
                 <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendChat('${chatID}')">
                 <i class="fas fa-paper-plane" style="color:var(--fb-blue); cursor:pointer;" onclick="sendChat('${chatID}')"></i>
             </div>`;
         document.body.appendChild(win);
+        let first = true;
         db.ref('msgs/'+chatID).on('value', s => {
-            let b = document.getElementById('body-'+chatID); if(!b) return; b.innerHTML = "";
+            let b = document.getElementById('body-'+chatID); if(!b) return;
+            b.innerHTML = "";
             s.forEach(m => {
-                let d = m.val(); let isMe = d.s === me.uid;
-                if(d.deletedFor && d.deletedFor.includes(me.uid)) return;
-                let mDiv = document.createElement('div'); mDiv.className = `msg ${isMe?'msg-me':'msg-them'}`;
-                let content = d.t;
-                if(d.type === 'img') content = `<img src="${d.t}" class="media-file">`;
-                if(d.type === 'vid') content = `<video src="${d.t}" controls class="media-file"></video>`;
-                mDiv.innerHTML = content;
-                mDiv.onclick = () => {
-                    let choice = prompt("Select Option:\n1. Delete for Me\n2. Delete for Everyone", "1");
-                    if(choice === "1") {
-                        let delList = d.deletedFor || []; delList.push(me.uid);
-                        db.ref('msgs/'+chatID+'/'+m.key).update({deletedFor: delList});
-                    } else if(choice === "2" && isMe) {
-                        db.ref('msgs/'+chatID+'/'+m.key).remove();
-                    }
-                };
+                let d = m.val();
+                let mDiv = document.createElement('div');
+                mDiv.className = `msg ${d.s === me.uid ? 'msg-me' : 'msg-them'}`;
+                mDiv.innerText = d.t;
                 b.appendChild(mDiv);
             });
             b.scrollTop = b.scrollHeight;
+            if(!first) document.getElementById('beep-sound').play().catch(() => {});
+            first = false;
         });
     }
 
     function sendChat(cid) {
         let i = document.getElementById('in-'+cid); if(!i.value.trim()) return;
-        db.ref('msgs/'+cid).push({s:me.uid, t:i.value, type:'text', ts: Date.now()}); i.value = "";
+        db.ref('msgs/'+cid).push({s:me.uid, t:i.value, ts: Date.now()}); i.value = "";
     }
 
-    function sendMedia(cid, input) {
-        let file = input.files[0]; let type = file.type.startsWith('video') ? 'vid' : 'img';
-        let r = new FileReader(); r.onload = e => db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type: type, ts: Date.now()});
-        r.readAsDataURL(file);
+    function closeModals(e) { if(e.target.className === 'overlay') e.target.style.display = 'none'; }
+    function previewPostMedia(input) {
+        let r = new FileReader(); r.onload = e => { tempPostMedia = e.target.result; let p = document.getElementById('post-media-preview'); p.src = tempPostMedia; p.style.display = 'block'; };
+        r.readAsDataURL(input.files[0]);
     }
 </script>
 </body>
