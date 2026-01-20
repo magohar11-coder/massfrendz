@@ -49,10 +49,10 @@
 
         .chat-footer { padding: 12px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; background: white; }
         .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 10px 15px; border-radius: 25px; outline: none; }
-        .media-file { max-width: 100%; border-radius: 10px; margin-top: 5px; }
+        .media-file { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
         
-        /* Delete Button Style */
-        .del-post-btn { position: absolute; top: 15px; right: 15px; color: #ccc; cursor: pointer; font-size: 14px; transition: 0.3s; }
+        /* Post Delete Button Logic Style */
+        .del-post-btn { position: absolute; top: 15px; right: 15px; color: #ccc; cursor: pointer; font-size: 16px; transition: 0.2s; z-index: 5; }
         .del-post-btn:hover { color: #ff4d4d; }
     </style>
 </head>
@@ -148,9 +148,8 @@
         tempPostMedia = "";
     }
 
-    // --- DELETE POST FUNCTION ---
     function deletePost(pid) {
-        if(confirm("Delete this post?")) {
+        if(confirm("Delete this post permanently?")) {
             db.ref('posts/'+pid).remove();
         }
     }
@@ -191,8 +190,8 @@
             <div class="chat-header" id="head-${chatID}"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer;">&times;</span></div>
             <div id="body-${chatID}" class="chat-body"></div>
             <div class="chat-footer">
-                <div style="display:flex; gap:8px; color:var(--fb-blue); font-size:16px;">
-                    <label><i class="fas fa-image" style="cursor:pointer;"></i><input type="file" accept="image/*" hidden onchange="sendMedia('${chatID}', this, 'image')"></label>
+                <div style="display:flex; gap:10px; color:var(--fb-blue); font-size:18px;">
+                    <label><i class="fas fa-camera" style="cursor:pointer;"></i><input type="file" accept="image/*" hidden onchange="sendMedia('${chatID}', this, 'image')"></label>
                     <label><i class="fas fa-video" style="cursor:pointer;"></i><input type="file" accept="video/*" hidden onchange="sendMedia('${chatID}', this, 'video')"></label>
                 </div>
                 <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key=='Enter') sendChat('${chatID}')">
