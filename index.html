@@ -13,13 +13,11 @@
         :root { --main: #00c853; --bg: #f0f2f5; --card: #ffffff; --text-dark: #1c1e21; }
         body { background: var(--bg); color: var(--text-dark); font-family: 'Segoe UI', Arial; margin: 0; padding: 0; overflow-x: hidden; }
         
-        /* Login Screen Styling */
         #login-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .login-card { text-align: center; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: white; }
         .google-btn { background: #4285F4; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; margin: 20px auto; }
         
-        /* Content Visibility */
-        #main-app { display: none; } /* Chupa rahay ga jab tak login na ho */
+        #main-app { display: none; }
 
         nav { position: fixed; top: 0; width: 100%; height: 56px; background: var(--card); border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1000; box-sizing: border-box; }
         .sidebar { position: fixed; left: 0; top: 56px; width: 280px; padding: 16px; }
@@ -37,8 +35,9 @@
         .chat-input-area { padding: 8px; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: center; }
         .chat-input-area input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
         
-        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 80%; font-size: 14px; position: relative; cursor: pointer; }
-        .delete-bar { background: #1877f2; color: white; padding: 5px 15px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
+        .msg-bubble { padding: 8px 12px; border-radius: 18px; max-width: 80%; font-size: 14px; position: relative; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
+        .msg-selected { border-color: #1877f2; background: #e7f3ff !important; color: black !important; }
+        .delete-bar { background: #1877f2; color: white; padding: 8px 15px; display: none; justify-content: space-between; align-items: center; font-size: 13px; }
         
         @media (max-width: 900px) { .sidebar, .online-panel { display: none; } .main-content { margin: 70px 10px; } .chat-float { right: 10px; width: 90%; } }
     </style>
@@ -49,10 +48,7 @@
     <div class="login-card">
         <h1 style="color: var(--main); margin-bottom: 5px;">MASSFRENDZ</h1>
         <p style="color: #65676b;">Connect with friends securely.</p>
-        <button class="google-btn" onclick="login()">
-            <i class="fab fa-google"></i> Sign in with Google
-        </button>
-        <p style="font-size: 12px; color: gray;">Privacy Secured by Gohar Pro</p>
+        <button class="google-btn" onclick="login()"><i class="fab fa-google"></i> Sign in with Google</button>
     </div>
 </div>
 
@@ -60,7 +56,7 @@
     <nav>
         <h2 style="color: var(--main); margin: 0;">MASSFRENDZ</h2>
         <div style="display: flex; gap: 15px; align-items: center;">
-            <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor: pointer;" title="Logout"></i>
+            <i class="fas fa-sign-out-alt" onclick="logout()" style="cursor: pointer;"></i>
             <img id="user-avatar" style="width: 35px; height: 35px; border-radius: 50%;">
         </div>
     </nav>
@@ -77,7 +73,7 @@
                 <i class="fas fa-times" onclick="removeSelectedImg()" style="position:absolute; top:10px; right:10px; color:red; cursor:pointer; background:white; border-radius:50%; padding:5px;"></i>
             </div>
             <div style="margin-top:10px; display:flex; justify-content:space-between;">
-                <label style="color:#45bd62; cursor:pointer;"><i class="fas fa-image"></i> Media<input type="file" id="media-upload" hidden accept="image/*,video/*" onchange="previewPostImage(this)"></label>
+                <label style="color:#45bd62; cursor:pointer;"><i class="fas fa-image"></i> Media<input type="file" id="post-media-input" hidden accept="image/*,video/*" onchange="previewPostImage(this)"></label>
                 <button id="post-btn" onclick="submitPost()" style="background:var(--main); color:white; border:none; padding:5px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">Post</button>
             </div>
         </div>
@@ -97,21 +93,17 @@
     
     let me = null; let selectedPostImg = ""; let selectedMsgs = {};
 
-    // --- SECURE AUTH CHECK ---
     auth.onAuthStateChanged(user => {
-        const loginScreen = document.getElementById('login-screen');
-        const mainApp = document.getElementById('main-app');
-
         if(user) {
             me = user;
-            loginScreen.style.display = 'none'; // Login screen hide
-            mainApp.style.display = 'block';    // App show
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
             updateUI();
             db.ref('users/'+user.uid).update({n:user.displayName, p:user.photoURL, online:true});
             loadPosts(); loadOnlineUsers();
         } else {
-            loginScreen.style.display = 'flex';
-            mainApp.style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('main-app').style.display = 'none';
         }
     });
 
@@ -125,7 +117,7 @@
         document.getElementById('side-name').innerText = me.displayName;
     }
 
-    // --- CHAT LOGIC ---
+    // --- CHAT & MULTI-DELETE ---
     window.openChat = (uid, name, img) => {
         const chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
         if(document.getElementById('chat-window-'+chatID)) return;
@@ -155,18 +147,41 @@
             s.forEach(m => {
                 const d = m.val(); const isMe = d.s === me.uid;
                 const msgDiv = document.createElement('div');
-                msgDiv.className = "msg-bubble";
+                msgDiv.id = 'msg-'+m.key;
+                msgDiv.className = `msg-bubble ${selectedMsgs[m.key] ? 'msg-selected' : ''}`;
                 msgDiv.style = `background:${isMe?'var(--main)':'#e4e6e9'}; color:${isMe?'white':'black'}; align-self:${isMe?'flex-end':'flex-start'};`;
                 
                 if(d.type === 'img') msgDiv.innerHTML = `<img src="${d.t}" style="width:100%; border-radius:10px;">`;
                 else if(d.type === 'video') msgDiv.innerHTML = `<video src="${d.t}" controls style="width:100%;"></video>`;
                 else msgDiv.innerText = d.t;
 
-                msgDiv.onclick = () => { if(isMe && confirm("Delete message?")) db.ref('msgs/'+chatID+'/'+m.key).remove(); };
+                msgDiv.onclick = () => toggleMsgSelection(chatID, m.key, isMe);
                 box.appendChild(msgDiv);
             });
             box.scrollTop = box.scrollHeight;
         });
+    };
+
+    function toggleMsgSelection(cid, mid, isMe) {
+        if(!isMe) return; // Sirf apne message select honge
+        if(selectedMsgs[mid]) delete selectedMsgs[mid];
+        else selectedMsgs[mid] = true;
+
+        const count = Object.keys(selectedMsgs).length;
+        const bar = document.getElementById('del-bar-'+cid);
+        bar.style.display = count > 0 ? 'flex' : 'none';
+        document.getElementById('del-count-'+cid).innerText = count + " selected";
+        
+        const el = document.getElementById('msg-'+mid);
+        if(el) el.classList.toggle('msg-selected');
+    }
+
+    window.deleteSelectedMsgs = (cid) => {
+        if(confirm("Delete selected messages?")) {
+            Object.keys(selectedMsgs).forEach(mid => db.ref('msgs/'+cid+'/'+mid).remove());
+            selectedMsgs = {};
+            document.getElementById('del-bar-'+cid).style.display = 'none';
+        }
     };
 
     window.sendText = (cid) => {
@@ -184,7 +199,7 @@
         reader.readAsDataURL(file);
     };
 
-    // --- POSTING ---
+    // --- POSTING FIXES ---
     window.previewPostImage = (i) => {
         if(i.files[0]) {
             const r = new FileReader();
@@ -197,6 +212,12 @@
         }
     };
 
+    window.removeSelectedImg = () => {
+        selectedPostImg = "";
+        document.getElementById('image-preview-container').style.display = 'none';
+        document.getElementById('post-media-input').value = "";
+    };
+
     window.submitPost = () => {
         const t = document.getElementById('post-input').value;
         const btn = document.getElementById('post-btn');
@@ -205,10 +226,10 @@
         
         db.ref('posts').push({ uid: me.uid, n: me.displayName, p: me.photoURL, t: t, img: selectedPostImg, ts: Date.now() })
         .then(() => {
-            document.getElementById('post-input').value = ""; selectedPostImg = "";
-            document.getElementById('image-preview-container').style.display = 'none';
+            document.getElementById('post-input').value = ""; 
+            removeSelectedImg();
             btn.innerText = "Post"; btn.disabled = false;
-        });
+        }).catch(e => { alert(e.message); btn.innerText = "Post"; btn.disabled = false; });
     };
 
     function loadPosts() {
