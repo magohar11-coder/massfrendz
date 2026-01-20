@@ -51,8 +51,8 @@
         .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 10px 15px; border-radius: 25px; outline: none; }
         .media-file { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
         
-        /* Post Delete Button Logic Style */
-        .del-post-btn { position: absolute; top: 15px; right: 15px; color: #ccc; cursor: pointer; font-size: 16px; transition: 0.2s; z-index: 5; }
+        /* Fixed Delete Post Button Style */
+        .del-post-btn { position: absolute; top: 15px; right: 15px; color: #ccc; cursor: pointer; font-size: 18px; transition: 0.3s; padding: 5px; }
         .del-post-btn:hover { color: #ff4d4d; }
     </style>
 </head>
@@ -149,7 +149,7 @@
     }
 
     function deletePost(pid) {
-        if(confirm("Delete this post permanently?")) {
+        if(confirm("Delete this post?")) {
             db.ref('posts/'+pid).remove();
         }
     }
@@ -161,7 +161,7 @@
                 let p = x.val();
                 let delBtn = p.uid === me.uid ? `<i class="fas fa-trash del-post-btn" onclick="deletePost('${x.key}')"></i>` : "";
                 let mediaTag = p.m ? `<img src="${p.m}" class="media-file">` : "";
-                list.innerHTML = `<div class="card">${delBtn}
+                let postHTML = `<div class="card">${delBtn}
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                         <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
                         <b>${p.n}</b>
@@ -169,7 +169,8 @@
                     <p style="margin:5px 0;">${p.t}</p>${mediaTag}
                     <hr style="opacity:0.1; margin:15px 0;">
                     <button onclick="openChat('${p.uid}','${p.n}')" style="background:var(--fb-blue); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; width:100%;">Message</button>
-                </div>` + list.innerHTML;
+                </div>`;
+                list.innerHTML = postHTML + list.innerHTML;
             });
         });
     }
