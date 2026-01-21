@@ -36,8 +36,11 @@
         .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; cursor: pointer; position: relative; transition: 0.2s; border: 2px solid transparent; }
         .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .msg-them { background: #e4e6e9; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .msg.selected { border-color: gold; box-shadow: 0 0 10px rgba(255,215,0,0.5); background-color: #fff9e6; }
+        .msg.selected { border-color: gold; box-shadow: 0 0 10px rgba(255,215,0,0.5); }
         
+        .seen-status { font-size: 10px; color: #888; align-self: flex-end; margin-top: -5px; margin-right: 5px; }
+        .typing-indicator { font-size: 11px; color: #555; font-style: italic; padding: 5px 15px; background: #f0f2f5; }
+
         .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 8px; background: white; }
         .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
         .media-file { max-width: 100%; border-radius: 10px; display: block; margin-top: 5px; }
@@ -67,7 +70,8 @@
         <div class="card feed">
             <textarea id="post-text" placeholder="What's on your mind?" style="width:100%; height:70px; border:none; outline:none; font-size:16px; resize:none;"></textarea>
             <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #eee; padding-top:10px;">
-                <label style="color:var(--fb-blue); cursor:pointer;"><i class="fas fa-image"></i> Media <input type="file" id="post-media-input" hidden accept="image/*"></label>
+                <label style="color:var(--fb-blue); cursor:pointer;"><i class="fas fa-image"></i> Media <input type="file" id="post-media-input" hidden accept="image/*" onchange="previewPostMedia(this)"></label>
+                <div id="post-preview"></div>
                 <button onclick="submitPost(this)" class="btn btn-main">Post</button>
             </div>
         </div>
@@ -81,12 +85,16 @@
     const auth = firebase.auth(); const db = firebase.database();
     let me = null; 
     let selectedMessages = {}; 
+    let postMediaBase64 = "";
 
     auth.onAuthStateChanged(user => {
         if(user) {
             me = user;
             document.getElementById('login-screen').style.display='none';
             document.getElementById('main-app').style.display='block';
+            db.ref('users/'+user.uid).update({ n: user.displayName, p: user.photoURL, online: true });
+            db.ref('users/'+user.uid).onDisconnect().update({ online: false });
+            
             db.ref('users/'+user.uid).on('value', s => {
                 let d = s.val() || { n: user.displayName, p: user.photoURL };
                 document.getElementById('my-name').innerText = d.n;
@@ -98,6 +106,14 @@
 
     function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 
+    function previewPostMedia(input) {
+        if (input.files && input.files[0]) {
+            let r = new FileReader();
+            r.onload = e => { postMediaBase64 = e.target.result; document.getElementById('post-preview').innerHTML = "📸 Ready"; };
+            r.readAsDataURL(input.files[0]);
+        }
+    }
+
     function initPostListener() {
         const list = document.getElementById('post-list');
         db.ref('posts').limitToLast(15).on('child_added', s => {
@@ -105,11 +121,14 @@
             const div = document.createElement('div'); div.className = 'card'; div.id = 'post-' + s.key;
             div.innerHTML = `<div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
                 <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"><b>${p.n}</b>
+                ${p.uid === me.uid ? `<i class="fas fa-trash" style="margin-left:auto; color:#ccc; cursor:pointer;" onclick="db.ref('posts/${s.key}').remove()"></i>` : ''}
             </div>
             <p>${p.t}</p>
+            ${p.m ? `<img src="${p.m}" style="width:100%; border-radius:8px; margin-bottom:10px;">` : ''}
             <button onclick="openChat('${p.uid}','${p.n}')" class="btn btn-gray" style="width:100%; margin-top:10px;"><i class="fas fa-comment"></i> Message</button>`;
             list.insertBefore(div, list.firstChild);
         });
+        db.ref('posts').on('child_removed', s => { if(document.getElementById('post-'+s.key)) document.getElementById('post-'+s.key).remove(); });
     }
 
     function openChat(uid, name) {
@@ -117,7 +136,6 @@
         if(document.getElementById('win-'+chatID)) return;
         
         selectedMessages[chatID] = [];
-
         let win = document.createElement('div'); win.id = 'win-'+chatID; win.className = 'chat-window';
         win.innerHTML = `<div class="chat-header">
             <b>${name}</b>
@@ -127,11 +145,12 @@
             </div>
         </div>
         <div id="body-${chatID}" class="chat-body"></div>
+        <div id="typing-${chatID}" class="typing-indicator" style="display:none;">${name} is typing...</div>
         <div class="chat-footer">
             <label style="color:var(--fb-blue); cursor:pointer;"><i class="fas fa-paperclip"></i>
                 <input type="file" hidden onchange="sendMedia('${chatID}', this)" accept="image/*,video/*">
             </label>
-            <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendChat('${chatID}')">
+            <input id="in-${chatID}" placeholder="Aa" oninput="updateTyping('${chatID}')" onkeypress="if(event.key==='Enter') sendChat('${chatID}')">
             <i class="fas fa-paper-plane" style="color:var(--fb-blue); cursor:pointer;" onclick="sendChat('${chatID}')"></i>
         </div>`;
         document.body.appendChild(win);
@@ -142,7 +161,9 @@
         db.ref('msgs/'+chatID).on('child_added', s => {
             let b = document.getElementById('body-'+chatID); if(!b) return;
             let d = s.val();
+            
             if(d.deletedFor && d.deletedFor.includes(me.uid)) return;
+            if(d.s !== me.uid) db.ref(`msgs/${chatID}/${s.key}`).update({seen: true});
 
             let mDiv = document.createElement('div');
             mDiv.id = 'msg-'+s.key;
@@ -153,95 +174,100 @@
             else mDiv.innerHTML = d.t;
             
             mDiv.onclick = () => toggleSelect(chatID, s.key, d.s);
-            
             b.appendChild(mDiv);
-            b.scrollTop = b.scrollHeight;
 
-            // FIX: Sound only for new incoming messages after initial load
+            if(d.s === me.uid && d.seen) {
+                let sDiv = document.createElement('div');
+                sDiv.className = 'seen-status'; sDiv.id = 'seen-'+s.key;
+                sDiv.innerText = 'Seen';
+                b.appendChild(sDiv);
+            }
+
+            b.scrollTop = b.scrollHeight;
             if(initialLoadDone && d.s !== me.uid) {
                 let sound = document.getElementById('beep-sound');
-                sound.currentTime = 0;
-                sound.play().catch(e => console.log("Sound error:", e));
+                sound.currentTime = 0; sound.play().catch(e => {});
             }
         });
 
-        // Delete Listener
-        db.ref('msgs/'+chatID).on('child_removed', s => {
-            let el = document.getElementById('msg-'+s.key);
-            if(el) el.remove();
+        db.ref('msgs/'+chatID).on('child_changed', s => {
+            let d = s.val();
+            if(d.seen && d.s === me.uid && !document.getElementById('seen-'+s.key)) {
+                let b = document.getElementById('body-'+chatID);
+                let sDiv = document.createElement('div');
+                sDiv.className = 'seen-status'; sDiv.id = 'seen-'+s.key;
+                sDiv.innerText = 'Seen';
+                b.appendChild(sDiv);
+            }
         });
 
-        // Set initial load to true once existing data is fetched
+        db.ref('msgs/'+chatID).on('child_removed', s => { if(document.getElementById('msg-'+s.key)) document.getElementById('msg-'+s.key).remove(); });
+        db.ref('typing/'+chatID+'/'+uid).on('value', s => { document.getElementById('typing-'+chatID).style.display = s.val() ? 'block' : 'none'; });
         db.ref('msgs/'+chatID).once('value', () => { initialLoadDone = true; });
+    }
+
+    function updateTyping(chatID) {
+        db.ref('typing/'+chatID+'/'+me.uid).set(true);
+        clearTimeout(window['t_'+chatID]);
+        window['t_'+chatID] = setTimeout(() => db.ref('typing/'+chatID+'/'+me.uid).set(false), 2000);
     }
 
     function toggleSelect(chatID, msgID, senderID) {
         const el = document.getElementById('msg-'+msgID);
         if(!selectedMessages[chatID]) selectedMessages[chatID] = [];
-        
         const index = selectedMessages[chatID].findIndex(m => m.id === msgID);
-        
         if(index > -1) {
-            selectedMessages[chatID].splice(index, 1);
-            el.classList.remove('selected');
+            selectedMessages[chatID].splice(index, 1); el.classList.remove('selected');
         } else {
-            selectedMessages[chatID].push({id: msgID, sender: senderID});
-            el.classList.add('selected');
+            selectedMessages[chatID].push({id: msgID, sender: senderID}); el.classList.add('selected');
         }
-        
         document.getElementById('del-btn-'+chatID).style.display = selectedMessages[chatID].length > 0 ? 'block' : 'none';
     }
 
     function deleteSelected(chatID) {
-        if(!confirm(`Delete ${selectedMessages[chatID].length} messages?`)) return;
-        
+        if(!confirm(`Delete ${selectedMessages[chatID].length} message(s)?`)) return;
         selectedMessages[chatID].forEach(m => {
             if(m.sender === me.uid) {
-                db.ref(`msgs/${chatID}/${m.id}`).remove();
+                db.ref(`msgs/${chatID}/${m.id}`).remove(); // Delete for everyone
             } else {
                 db.ref(`msgs/${chatID}/${m.id}`).once('value', s => {
                     let d = s.val();
                     let delList = d.deletedFor || [];
                     if(!delList.includes(me.uid)) delList.push(me.uid);
                     db.ref(`msgs/${chatID}/${m.id}`).update({deletedFor: delList});
-                    let el = document.getElementById('msg-'+m.id);
-                    if(el) el.remove();
+                    if(document.getElementById('msg-'+m.id)) document.getElementById('msg-'+m.id).remove();
                 });
             }
         });
-        
         selectedMessages[chatID] = [];
         document.getElementById('del-btn-'+chatID).style.display = 'none';
     }
 
     function sendChat(cid) {
         let i = document.getElementById('in-'+cid); if(!i.value.trim()) return;
-        db.ref('msgs/'+cid).push({s:me.uid, t:i.value, type:'text', ts: Date.now()}); i.value = "";
+        db.ref('msgs/'+cid).push({s:me.uid, t:i.value, type:'text', ts: Date.now(), seen: false});
+        i.value = ""; db.ref('typing/'+cid+'/'+me.uid).set(false);
     }
 
     function sendMedia(cid, input) {
-        const file = input.files[0];
-        if(!file) return;
+        const file = input.files[0]; if(!file) return;
         const type = file.type.startsWith('video') ? 'video' : 'img';
-        
         let r = new FileReader();
-        r.onload = e => {
-            db.ref('msgs/'+cid).push({
-                s: me.uid, 
-                t: e.target.result, 
-                type: type, 
-                ts: Date.now()
-            });
-        };
+        r.onload = e => db.ref('msgs/'+cid).push({s: me.uid, t: e.target.result, type: type, ts: Date.now(), seen: false});
         r.readAsDataURL(file);
-        input.value = ""; // Clear input
+        input.value = "";
     }
 
     function submitPost(btn) {
-        let t = document.getElementById('post-text').value; if(!t.trim()) return;
+        let t = document.getElementById('post-text').value; if(!t.trim() && !postMediaBase64) return;
         btn.disabled = true;
-        db.ref('posts').push({ uid: me.uid, n: document.getElementById('my-name').innerText, p: document.getElementById('my-pic').src, t: t, ts: Date.now() })
-        .then(() => { document.getElementById('post-text').value = ""; btn.disabled = false; });
+        db.ref('posts').push({ uid: me.uid, n: me.displayName, p: me.photoURL, t: t, m: postMediaBase64, ts: Date.now() })
+        .then(() => { 
+            document.getElementById('post-text').value = ""; 
+            postMediaBase64 = ""; 
+            document.getElementById('post-preview').innerHTML = "";
+            btn.disabled = false; 
+        });
     }
 </script>
 </body>
