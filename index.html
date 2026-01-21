@@ -228,7 +228,7 @@
     }
 
     function submitPost(e) {
-        const btn = e.target;
+        const btn = document.getElementById('post-submit-btn');
         let t = document.getElementById('post-text').value;
         if(!t.trim() && !tempPostMedia) return;
         
@@ -244,6 +244,10 @@
             tempPostMedia = "";
             btn.disabled = false;
             btn.innerText = "Post";
+        }).catch(err => {
+            btn.disabled = false;
+            btn.innerText = "Post";
+            alert("Error: " + err.message);
         });
     }
 
@@ -309,6 +313,8 @@
                 let mDiv = document.createElement('div');
                 mDiv.className = `msg ${d.s === me.uid ? 'msg-me' : 'msg-them'}`;
                 mDiv.innerText = d.t;
+                // Double click to delete (optional original logic)
+                mDiv.ondblclick = () => { if(d.s === me.uid && confirm("Delete?")) db.ref('msgs/'+chatID+'/'+m.key).remove(); };
                 b.appendChild(mDiv);
             });
             b.scrollTop = b.scrollHeight;
