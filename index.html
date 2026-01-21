@@ -33,26 +33,23 @@
         .feed { width: 100%; max-width: 550px; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
         
-        /* Facebook Style Post Box */
-        .post-input-box textarea { width: 100%; border: none; resize: none; font-size: 16px; outline: none; margin-bottom: 10px; min-height: 80px; }
-        .post-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
-
         .btn { border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-main { background: var(--main); color: white; }
         .btn-blue { background: var(--fb-blue); color: white; }
         .btn-red { background: var(--red); color: white; }
         .btn-gray { background: #e4e6e9; color: black; }
 
-        .chat-window { position: fixed; bottom: 0; right: 20px; width: 340px; height: 420px; background: white; border-radius: 12px 12px 0 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; z-index: 2000; transition: 0.3s; }
+        .chat-window { position: fixed; bottom: 0; right: 20px; width: 340px; height: 420px; background: white; border-radius: 12px 12px 0 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; z-index: 2000; }
         .chat-header { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px 12px 0 0; }
         .chat-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background: #f0f2f5; }
-        .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 5px; background: white;}
-        .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 10px 15px; border-radius: 20px; outline: none; }
-        
-        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; position: relative; cursor: pointer; animation: pop 0.2s ease; }
-        @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .msg { padding: 8px 12px; border-radius: 18px; max-width: 75%; font-size: 14px; word-wrap: break-word; cursor: pointer; position: relative; }
         .msg-me { background: var(--fb-blue); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .msg-them { background: #e4e6e9; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 8px; background: white; }
+        .chat-footer input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
+        .media-file { max-width: 100%; border-radius: 10px; display: block; margin-top: 5px; }
+
+        .search-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -76,6 +73,7 @@
             <div class="detail-item"><i class="fas fa-birthday-cake"></i> Born: <span id="view-dob">Not set</span></div>
             <div class="detail-item"><i class="fas fa-school"></i> School: <span id="view-school">Not set</span></div>
             <div class="detail-item"><i class="fas fa-map-marker-alt"></i> City: <span id="view-city">Not set</span></div>
+            
             <div id="edit-details-section" style="display:none; border-top:1px solid #ddd; padding-top:10px;">
                 <input type="text" id="edit-name" class="edit-input" placeholder="Full Name">
                 <input type="text" id="edit-dob" class="edit-input" placeholder="DOB">
@@ -98,7 +96,7 @@
 </div>
 
 <div id="login-screen" style="height:100vh; display:flex; align-items:center; justify-content:center;">
-    <button onclick="login()" class="btn btn-blue" style="padding:15px 30px; font-size:18px; border-radius: 50px; box-shadow: 0 10px 20px rgba(0,0,0,0.2);">Login with Google</button>
+    <button onclick="login()" class="btn btn-blue" style="padding:15px 30px; font-size:18px;">Login with Google</button>
 </div>
 
 <div id="main-app" style="display:none;">
@@ -117,14 +115,14 @@
         <div class="card feed">
             <div class="post-input-box">
                 <textarea id="post-text" placeholder="What's on your mind?"></textarea>
-                <img id="post-media-preview" style="width:100%; display:none; border-radius:8px; margin-bottom:10px; border: 1px solid #eee;">
+                <img id="post-media-preview" style="width:100%; display:none; border-radius:8px; margin-bottom:10px;">
             </div>
             <div class="post-actions">
-                <label style="color:var(--fb-blue); cursor:pointer; font-weight: 600;">
+                <label style="color:var(--fb-blue); cursor:pointer;">
                     <i class="fas fa-image"></i> Media 
                     <input type="file" id="post-media-input" hidden onchange="previewPostMedia(this)" accept="image/*">
                 </label>
-                <button id="post-submit-btn" onclick="submitPost()" class="btn btn-main">Post</button>
+                <button id="post-submit-btn" onclick="submitPost(event)" class="btn btn-main">Post</button>
             </div>
         </div>
         <div id="request-list" class="feed"></div>
@@ -133,7 +131,6 @@
 </div>
 
 <script>
-    // Config same as yours
     const firebaseConfig = { apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA", authDomain: "massfrendz.firebaseapp.com", databaseURL: "https://massfrendz-default-rtdb.firebaseio.com/", projectId: "massfrendz" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.database();
@@ -159,113 +156,10 @@
     function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     function logout() { if(confirm("Logout?")) auth.signOut().then(() => location.reload()); }
 
-    // FIXED CHAT LOGIC
-    function openChat(uid, name) {
-        let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
-        if(document.getElementById('win-'+chatID)) return;
-        
-        let win = document.createElement('div'); 
-        win.id = 'win-'+chatID; win.className = 'chat-window';
-        win.innerHTML = `<div class="chat-header"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer; font-size:20px;">&times;</span></div>
-            <div id="body-${chatID}" class="chat-body"></div>
-            <div class="chat-footer">
-                <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendChat('${chatID}')">
-                <i class="fas fa-paper-plane" onclick="sendChat('${chatID}')" style="color:var(--fb-blue); cursor:pointer; font-size:20px; padding: 0 5px;"></i>
-            </div>`;
-        document.body.appendChild(win);
-        
-        let isFirstLoad = true;
-        db.ref('msgs/'+chatID).limitToLast(30).on('value', s => {
-            let b = document.getElementById('body-'+chatID); 
-            if(!b) return;
-            b.innerHTML = "";
-            s.forEach(m => {
-                let d = m.val();
-                let mDiv = document.createElement('div');
-                mDiv.className = `msg ${d.s === me.uid ? 'msg-me' : 'msg-them'}`;
-                mDiv.innerText = d.t;
-                // Double click to delete
-                mDiv.ondblclick = () => { 
-                    if(d.s === me.uid && confirm("Delete for everyone?")) {
-                        db.ref('msgs/'+chatID+'/'+m.key).remove();
-                    }
-                };
-                b.appendChild(mDiv);
-            });
-            b.scrollTop = b.scrollHeight;
-            if(!isFirstLoad) document.getElementById('beep-sound').play().catch(()=>{});
-            isFirstLoad = false;
-        });
-    }
-
-    function sendChat(cid) {
-        let i = document.getElementById('in-'+cid); 
-        let val = i.value.trim();
-        if(!val) return;
-        db.ref('msgs/'+cid).push({s:me.uid, t:val, ts: Date.now()}); 
-        i.value = "";
-    }
-
-    // 1. Post Submit karne ka function (Deeply Checked)
-function submitPost() {
-    const btn = document.getElementById('post-submit-btn');
-    const txt = document.getElementById('post-text');
-    const preview = document.getElementById('post-media-preview');
-    
-    // Safety Check: Agar text aur image dono khali hain toh function ruk jayega
-    if(!txt.value.trim() && !tempPostMedia) {
-        alert("Please write something or select a photo.");
-        return;
-    }
-    
-    // Button ko lock karna taaki "Stuck" na ho
-    btn.disabled = true;
-    btn.innerText = "Posting...";
-
-    // Firebase mein data bhejna
-    db.ref('posts').push({
-        uid: me.uid, 
-        n: document.getElementById('my-name').innerText, 
-        p: document.getElementById('my-pic').src,
-        t: txt.value, 
-        m: tempPostMedia, 
-        ts: Date.now()
-    }).then(() => {
-        // SUCCESS: Sab kuch reset karna
-        txt.value = ""; // Text area saaf
-        tempPostMedia = ""; // Image variable saaf
-        preview.style.display = 'none'; // Preview chhupana
-        preview.src = ""; // Preview image clear
-        
-        btn.disabled = false; // Button wapas active
-        btn.innerText = "Post";
-        console.log("Post successful!");
-    }).catch(e => {
-        // ERROR: Agar internet ya firebase error aaye
-        alert("Error: " + e.message);
-        btn.disabled = false;
-        btn.innerText = "Post";
-    });
-}
-
-// 2. Image Select/Preview karne ka function
-function previewPostMedia(i) {
-    if(i.files && i.files[0]) {
-        let r = new FileReader();
-        r.onload = e => {
-            tempPostMedia = e.target.result; // Base64 data variable mein save
-            const preview = document.getElementById('post-media-preview');
-            preview.src = e.target.result;
-            preview.style.display = 'block'; // Preview dikhana
-        };
-        r.readAsDataURL(i.files[0]);
-    }
-}
-    // Profile & Other Utils
+    // --- PROFILE & BLOCK LOGIC ---
     function viewUserProfile(uid) {
         db.ref('users/'+uid).once('value', s => {
-            const data = s.val();
-            if(!data) return;
+            const data = s.val(); if(!data) return;
             document.getElementById('prof-large-pic').src = data.p;
             document.getElementById('prof-display-name').innerText = data.n;
             document.getElementById('view-dob').innerText = data.dob || "Not set";
@@ -277,8 +171,7 @@ function previewPostMedia(i) {
             document.getElementById('me-only-actions').style.display = isMe ? 'block' : 'none';
             document.getElementById('cam-icon').style.display = isMe ? 'block' : 'none';
             
-            const actionDiv = document.getElementById('profile-actions');
-            actionDiv.innerHTML = "";
+            const actionDiv = document.getElementById('profile-actions'); actionDiv.innerHTML = "";
             if(!isMe) {
                 if(myBlocks.includes(uid)) {
                     actionDiv.innerHTML = `<button class="btn btn-gray" onclick="toggleBlock('${uid}', false)">Unblock</button>`;
@@ -291,28 +184,101 @@ function previewPostMedia(i) {
         });
     }
 
+    function toggleBlock(uid, status) {
+        if(status && confirm("Block this user?")) db.ref(`users/${me.uid}/blocks/${uid}`).set(true);
+        else if(!status) db.ref(`users/${me.uid}/blocks/${uid}`).remove();
+        document.getElementById('profile-overlay').style.display = 'none';
+    }
+
+    // --- POST LOGIC (FIXED) ---
+    function submitPost(e) {
+        const btn = e.target;
+        let t = document.getElementById('post-text').value;
+        if(!t.trim() && !tempPostMedia) return;
+        btn.disabled = true; btn.innerText = "Posting...";
+        db.ref('posts').push({
+            uid: me.uid, n: document.getElementById('my-name').innerText,
+            p: document.getElementById('my-pic').src, t: t, m: tempPostMedia, ts: Date.now()
+        }).then(() => {
+            document.getElementById('post-text').value = "";
+            document.getElementById('post-media-preview').style.display = 'none';
+            tempPostMedia = ""; btn.disabled = false; btn.innerText = "Post";
+        });
+    }
+
     function loadPosts() {
         db.ref('posts').on('value', s => {
-            const list = document.getElementById('post-list'); 
-            list.innerHTML = "";
-            let posts = []; 
-            s.forEach(x => posts.push({id:x.key, val:x.val()}));
+            const list = document.getElementById('post-list'); list.innerHTML = "";
+            let posts = []; s.forEach(x => posts.push({id:x.key, val:x.val()}));
             posts.reverse().forEach(item => {
-                let p = item.val; 
-                if(myBlocks.includes(p.uid)) return; 
+                let p = item.val; if(myBlocks.includes(p.uid)) return;
                 list.innerHTML += `<div class="card">
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; cursor:pointer;" onclick="viewUserProfile('${p.uid}')">
-                        <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"><b>${p.n}</b>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="viewUserProfile('${p.uid}')">
+                            <img src="${p.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"><b>${p.n}</b>
+                        </div>
+                        ${p.uid === me.uid ? `<i class="fas fa-trash" style="color:#ddd; cursor:pointer;" onclick="db.ref('posts/${item.id}').remove()"></i>` : ""}
                     </div>
-                    <p style="white-space: pre-wrap;">${p.t}</p>
-                    ${p.m ? `<img src="${p.m}" style="width:100%; border-radius:10px; margin-top:10px;">` : ""}
-                    <button onclick="openChat('${p.uid}','${p.n}')" class="btn btn-gray" style="width:100%; margin-top:15px;"><i class="fab fa-facebook-messenger"></i> Message</button>
+                    <p>${p.t}</p>${p.m ? `<img src="${p.m}" style="width:100%; border-radius:10px; margin-top:10px;">` : ""}
+                    <button onclick="openChat('${p.uid}','${p.n}')" class="btn btn-gray" style="width:100%; margin-top:10px;"><i class="fas fa-comment"></i> Message</button>
                 </div>`;
             });
         });
     }
 
-    // Requests, Search, and Profile Updates functions remain structurally similar but more robust
+    // --- ADVANCED CHAT LOGIC (MEDIA + DELETE) ---
+    function openChat(uid, name) {
+        if(myBlocks.includes(uid)) return alert("User is blocked!");
+        let chatID = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
+        if(document.getElementById('win-'+chatID)) return;
+        
+        let win = document.createElement('div'); win.id = 'win-'+chatID; win.className = 'chat-window';
+        win.innerHTML = `<div class="chat-header"><b>${name}</b><span onclick="this.closest('.chat-window').remove()" style="cursor:pointer;">&times;</span></div>
+            <div id="body-${chatID}" class="chat-body"></div>
+            <div class="chat-footer">
+                <label style="color:var(--fb-blue); cursor:pointer;"><i class="fas fa-paperclip"></i><input type="file" hidden onchange="sendMedia('${chatID}', this)" accept="image/*"></label>
+                <input id="in-${chatID}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendChat('${chatID}')">
+                <i class="fas fa-paper-plane" style="color:var(--fb-blue); cursor:pointer;" onclick="sendChat('${chatID}')"></i>
+            </div>`;
+        document.body.appendChild(win);
+        
+        let first = true;
+        db.ref('msgs/'+chatID).on('value', s => {
+            let b = document.getElementById('body-'+chatID); if(!b) return;
+            b.innerHTML = "";
+            s.forEach(m => {
+                let d = m.val(); if(d.deletedFor && d.deletedFor.includes(me.uid)) return;
+                let mDiv = document.createElement('div'); mDiv.className = `msg ${d.s === me.uid ? 'msg-me' : 'msg-them'}`;
+                let content = d.type === 'img' ? `<img src="${d.t}" class="media-file">` : d.t;
+                mDiv.innerHTML = content;
+                mDiv.onclick = () => {
+                    if(confirm("Delete message?")) {
+                        if(d.s === me.uid) db.ref(`msgs/${chatID}/${m.key}`).remove();
+                        else {
+                            let delList = d.deletedFor || []; delList.push(me.uid);
+                            db.ref(`msgs/${chatID}/${m.key}`).update({deletedFor: delList});
+                        }
+                    }
+                };
+                b.appendChild(mDiv);
+            });
+            b.scrollTop = b.scrollHeight;
+            if(!first) { document.getElementById('beep-sound').play().catch(()=>{}); }
+            first = false;
+        });
+    }
+
+    function sendChat(cid) {
+        let i = document.getElementById('in-'+cid); if(!i.value.trim()) return;
+        db.ref('msgs/'+cid).push({s:me.uid, t:i.value, type:'text', ts: Date.now()}); i.value = "";
+    }
+
+    function sendMedia(cid, input) {
+        let r = new FileReader(); r.onload = e => db.ref('msgs/'+cid).push({s:me.uid, t:e.target.result, type:'img', ts: Date.now()});
+        r.readAsDataURL(input.files[0]);
+    }
+
+    // --- FRIEND SYSTEM ---
     function sendRequest(toUid) {
         db.ref(`requests/${toUid}/${me.uid}`).set({ n: document.getElementById('my-name').innerText, p: document.getElementById('my-pic').src });
         alert("Request Sent!");
@@ -321,63 +287,52 @@ function previewPostMedia(i) {
     function loadRequests() {
         db.ref(`requests/${me.uid}`).on('value', s => {
             const div = document.getElementById('request-list');
-            div.innerHTML = s.exists() ? "<h3 style='color:white; margin: 10px 0;'>Friend Requests</h3>" : "";
+            div.innerHTML = s.exists() ? "<h3 style='color:white;'>Requests</h3>" : "";
             s.forEach(r => {
                 let d = r.val();
-                div.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center; padding: 10px 15px;">
-                    <div style="display:flex; gap:10px; align-items:center;"><img src="${d.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"> <b>${d.n}</b></div>
-                    <div style="display:flex; gap:5px;"><button class="btn btn-main" onclick="acceptFriend('${r.key}','${d.n}','${d.p}')">Accept</button>
-                    <button class="btn btn-gray" onclick="db.ref('requests/${me.uid}/${r.key}').remove()">✕</button></div>
+                div.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; gap:10px; align-items:center;"><img src="${d.p}" style="width:40px; height:40px; border-radius:50%;"> <b>${d.n}</b></div>
+                    <div><button class="btn btn-main" onclick="acceptFriend('${r.key}')">Accept</button></div>
                 </div>`;
             });
         });
     }
 
-    function acceptFriend(uid, name, pic) {
-        db.ref(`users/${me.uid}/friends/${uid}`).set(true);
-        db.ref(`users/${uid}/friends/${me.uid}`).set(true);
+    function acceptFriend(uid) {
+        db.ref(`users/${me.uid}/friends/${uid}`).set(true); db.ref(`users/${uid}/friends/${me.uid}`).set(true);
         db.ref(`requests/${me.uid}/${uid}`).remove();
     }
 
-    function searchUsers(v) {
-        if(!v) return document.getElementById('search-results').innerHTML = "";
+    function searchUsers(val) {
+        if(!val) return document.getElementById('search-results').innerHTML = "";
         db.ref('users').once('value', s => {
-            let h = ""; s.forEach(u => {
-                let d = u.val(); 
-                if(d.n.toLowerCase().includes(v.toLowerCase()) && u.key !== me.uid)
-                h += `<div class="search-item">
-                    <div style="display:flex; align-items:center; gap:10px;"><img src="${d.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;"> <b>${d.n}</b></div>
-                    <button onclick="sendRequest('${u.key}')" class="btn btn-blue">Add</button>
-                </div>`;
+            let html = "";
+            s.forEach(u => {
+                let d = u.val(); if(d.n.toLowerCase().includes(val.toLowerCase()) && u.key !== me.uid) {
+                    html += `<div class="search-item"><div onclick="viewUserProfile('${u.key}')" style="cursor:pointer;"><b>${d.n}</b></div><button onclick="sendRequest('${u.key}')" class="btn btn-blue">Add</button></div>`;
+                }
             });
-            document.getElementById('search-results').innerHTML = h;
+            document.getElementById('search-results').innerHTML = html;
         });
     }
 
-    function updateProfilePic(i) {
-        if (i.files && i.files[0]) {
-            let r = new FileReader(); 
-            r.onload = e => db.ref('users/'+me.uid).update({ p: e.target.result }).then(()=>location.reload());
-            r.readAsDataURL(i.files[0]);
-        }
-    }
-
     function saveProfileDetails() {
-        db.ref('users/'+me.uid).update({ 
-            n: document.getElementById('edit-name').value || document.getElementById('my-name').innerText, 
-            dob: document.getElementById('edit-dob').value, 
-            school: document.getElementById('edit-school').value, 
-            city: document.getElementById('edit-city').value 
-        }).then(() => location.reload());
+        db.ref('users/'+me.uid).update({
+            n: document.getElementById('edit-name').value, dob: document.getElementById('edit-dob').value,
+            school: document.getElementById('edit-school').value, city: document.getElementById('edit-city').value
+        }).then(() => { alert("Updated!"); location.reload(); });
     }
 
-    function closeModals(e) { if(e.target.className === 'overlay') e.target.style.display = 'none'; }
-    function toggleBlock(uid, status) {
-        if(status) db.ref(`users/${me.uid}/blocks/${uid}`).set(true);
-        else db.ref(`users/${me.uid}/blocks/${uid}`).remove();
-        document.getElementById('profile-overlay').style.display = 'none';
+    function updateProfilePic(i) {
+        let r = new FileReader(); r.onload = e => db.ref('users/'+me.uid).update({ p: e.target.result }).then(()=>location.reload());
+        r.readAsDataURL(i.files[0]);
     }
+
+    function previewPostMedia(i) {
+        let r = new FileReader(); r.onload = e => { tempPostMedia = e.target.result; document.getElementById('post-media-preview').src = e.target.result; document.getElementById('post-media-preview').style.display = 'block'; };
+        r.readAsDataURL(i.files[0]);
+    }
+    function closeModals(e) { if(e.target.className === 'overlay') e.target.style.display = 'none'; }
 </script>
 </body>
 </html>
-
