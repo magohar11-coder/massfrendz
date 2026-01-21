@@ -206,40 +206,61 @@
         i.value = "";
     }
 
-    // FIXED POST LOGIC
-    function submitPost() {
-        const btn = document.getElementById('post-submit-btn');
-        let t = document.getElementById('post-text').value;
-        if(!t.trim() && !tempPostMedia) return;
+    // 1. Post Submit karne ka function (Deeply Checked)
+function submitPost() {
+    const btn = document.getElementById('post-submit-btn');
+    const txt = document.getElementById('post-text');
+    const preview = document.getElementById('post-media-preview');
+    
+    // Safety Check: Agar text aur image dono khali hain toh function ruk jayega
+    if(!txt.value.trim() && !tempPostMedia) {
+        alert("Please write something or select a photo.");
+        return;
+    }
+    
+    // Button ko lock karna taaki "Stuck" na ho
+    btn.disabled = true;
+    btn.innerText = "Posting...";
+
+    // Firebase mein data bhejna
+    db.ref('posts').push({
+        uid: me.uid, 
+        n: document.getElementById('my-name').innerText, 
+        p: document.getElementById('my-pic').src,
+        t: txt.value, 
+        m: tempPostMedia, 
+        ts: Date.now()
+    }).then(() => {
+        // SUCCESS: Sab kuch reset karna
+        txt.value = ""; // Text area saaf
+        tempPostMedia = ""; // Image variable saaf
+        preview.style.display = 'none'; // Preview chhupana
+        preview.src = ""; // Preview image clear
         
-        btn.disabled = true; btn.innerText = "Posting...";
-        db.ref('posts').push({
-            uid: me.uid, n: document.getElementById('my-name').innerText, p: document.getElementById('my-pic').src,
-            t: t, m: tempPostMedia, ts: Date.now()
-        }).then(() => {
-            document.getElementById('post-text').value = "";
-            document.getElementById('post-media-preview').style.display = 'none';
-            document.getElementById('post-media-preview').src = ""; // Extra safety
-            tempPostMedia = ""; 
-            btn.disabled = false; btn.innerText = "Post";
-        }).catch(err => {
-            alert("Error: " + err.message);
-            btn.disabled = false; btn.innerText = "Post";
-        });
-    }
+        btn.disabled = false; // Button wapas active
+        btn.innerText = "Post";
+        console.log("Post successful!");
+    }).catch(e => {
+        // ERROR: Agar internet ya firebase error aaye
+        alert("Error: " + e.message);
+        btn.disabled = false;
+        btn.innerText = "Post";
+    });
+}
 
-    function previewPostMedia(i) {
-        if (i.files && i.files[0]) {
-            let r = new FileReader(); 
-            r.onload = e => { 
-                tempPostMedia = e.target.result; 
-                document.getElementById('post-media-preview').src = tempPostMedia; 
-                document.getElementById('post-media-preview').style.display = 'block'; 
-            };
-            r.readAsDataURL(i.files[0]);
-        }
+// 2. Image Select/Preview karne ka function
+function previewPostMedia(i) {
+    if(i.files && i.files[0]) {
+        let r = new FileReader();
+        r.onload = e => {
+            tempPostMedia = e.target.result; // Base64 data variable mein save
+            const preview = document.getElementById('post-media-preview');
+            preview.src = e.target.result;
+            preview.style.display = 'block'; // Preview dikhana
+        };
+        r.readAsDataURL(i.files[0]);
     }
-
+}
     // Profile & Other Utils
     function viewUserProfile(uid) {
         db.ref('users/'+uid).once('value', s => {
@@ -359,3 +380,4 @@
 </script>
 </body>
 </html>
+
