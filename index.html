@@ -25,6 +25,7 @@
         .btn { border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-main { background: var(--main); color: white; width: 100%; margin-top: 10px; }
         .btn-gray { background: #e4e6e9; color: black; }
+        .logout-btn { color: var(--red); font-size: 18px; margin-left: 15px; cursor: pointer; }
 
         #settings-modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border-radius:15px; box-shadow:0 0 50px rgba(0,0,0,0.5); z-index:3000; width:90%; max-width:320px; text-align:center; }
         .edit-pic-label { display: block; width: 80px; height: 80px; margin: 10px auto; border-radius: 50%; border: 2px dashed #ccc; cursor: pointer; overflow: hidden; }
@@ -71,12 +72,15 @@
 <div id="main-app" style="display:none;">
     <nav>
         <h2 style="color:var(--main); margin:0;">MF</h2>
-        <div class="user-profile" onclick="openSettings()">
-            <span id="display-name" style="font-weight:bold;"></span>
-            <div style="position:relative">
-                <img id="display-pic" src="">
-                <div id="my-dot" class="online-dot"></div>
+        <div style="display:flex; align-items:center;">
+            <div class="user-profile" onclick="openSettings()">
+                <span id="display-name" style="font-weight:bold;"></span>
+                <div style="position:relative">
+                    <img id="display-pic" src="">
+                    <div id="my-dot" class="online-dot"></div>
+                </div>
             </div>
+            <i class="fas fa-sign-out-alt logout-btn" onclick="logout()" title="Logout"></i>
         </div>
     </nav>
     <div class="container">
@@ -112,8 +116,19 @@
                 document.getElementById('preview-img').src = d.p;
             });
             loadPosts();
+        } else {
+            document.getElementById('login-screen').style.display='flex';
+            document.getElementById('main-app').style.display='none';
         }
     });
+
+    function logout() {
+        if(confirm("Are you sure you want to logout?")) {
+            db.ref('users/'+me.uid).update({ online: false }).then(() => {
+                auth.signOut();
+            });
+        }
+    }
 
     function getUser(uid, cb) {
         if(userCache[uid]) return cb(userCache[uid]);
@@ -122,9 +137,10 @@
 
     function login() { 
         auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(() => {
-            msgTone.play().catch(e => {}); // Pre-load audio on login
+            msgTone.play().catch(e => {}); 
         }); 
     }
+    
     function openSettings() { document.getElementById('settings-modal').style.display='block'; }
     
     function processPic(input, type, cid) {
@@ -199,7 +215,7 @@
         </div>`;
         document.body.appendChild(win);
         
-        // Typing Status Fix
+        // Accurate Typing Status Listener
         db.ref(`typing/${cid}/${uid}`).on('value', s => { 
             let indicator = document.getElementById(`typing-${cid}`);
             if(indicator) indicator.style.display = s.val() ? 'block' : 'none'; 
@@ -208,16 +224,10 @@
         selectedMsgs[cid] = [];
         db.ref('msgs/'+cid).limitToLast(30).on('child_added', s => {
             let d = s.val(); let b = document.getElementById('body-'+cid);
-            
-            // Tone and Seen Logic Fix
             if(d.s !== me.uid) {
                 if(activeChat === cid) db.ref(`msgs/${cid}/${s.key}`).update({seen: true});
-                msgTone.play().catch(() => {
-                    // Browser requires interaction to play audio
-                    console.log("Audio waiting for user interaction");
-                }); 
+                msgTone.play().catch(() => {}); 
             }
-            
             getUser(d.s, ud => {
                 let mRow = document.createElement('div'); mRow.id = 'm-'+s.key;
                 mRow.className = `msg-row ${d.s === me.uid ? 'msg-row-me msg-me' : 'msg-row-them msg-them'}`;
