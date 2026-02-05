@@ -21,7 +21,7 @@
         
         .container { margin-top: 80px; display: flex; flex-direction: column; align-items: center; padding: 10px; }
         .feed { width: 100%; max-width: 500px; }
-        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; }
         .btn { border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-main { background: var(--main); color: white; width: 100%; margin-top: 10px; }
         .btn-gray { background: #e4e6e9; color: black; }
@@ -47,6 +47,8 @@
         .status-txt { font-size: 9px; margin-top: 2px; text-align: right; color: #888; display: block; }
         .selected .msg-bubble { border: 2px solid gold !important; }
         .typing-indicator { font-size: 11px; color: var(--main); font-style: italic; display: none; }
+        .del-post-btn { position: absolute; top: 15px; right: 15px; color: #ccc; cursor: pointer; }
+        .del-post-btn:hover { color: var(--red); }
     </style>
 </head>
 <body>
@@ -79,7 +81,7 @@
     </nav>
     <div class="container">
         <div class="card feed">
-            <textarea id="post-input" placeholder="What's on your mind?"></textarea>
+            <textarea id="post-input" placeholder="What's on your mind?" style="width:100%; border:none; outline:none; resize:none;"></textarea>
             <button onclick="addPost()" class="btn btn-main">Post Now</button>
         </div>
         <div id="post-container" class="feed"></div>
@@ -92,7 +94,7 @@
     const auth = firebase.auth(); const db = firebase.database();
     
     let me = null; let tempPic = ""; let selectedMsgs = {}; let activeChat = null;
-    let userCache = {}; // FAST LOADING CACHE
+    let userCache = {};
     const msgTone = new Audio('https://raw.githubusercontent.com/Anand906/Messenger-Tone/main/messenger_tone.mp3');
 
     auth.onAuthStateChanged(user => {
@@ -147,13 +149,18 @@
                 let div = document.createElement('div'); div.id = id; div.className = 'card';
                 div.innerHTML = `<div style="display:flex; align-items:center; gap:10px">
                     <img src="${ud.p}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
-                    <b>${ud.n}</b> <span style="font-size:10px; color:${ud.online?'green':'gray'}">${ud.online?'● Online':'● Offline'}</span>
+                    <div>
+                        <b>${ud.n}</b><br>
+                        <span style="font-size:10px; color:${ud.online?'green':'gray'}">${ud.online?'● Online':'● Offline'}</span>
+                    </div>
                 </div>
+                ${p.uid === me.uid ? `<i class="fas fa-trash del-post-btn" onclick="deletePost('${s.key}')"></i>` : ''}
                 <p>${p.t}</p>
                 <button onclick="openChat('${p.uid}','${ud.n.replace(/'/g, "")}','${ud.p}')" class="btn btn-gray" style="width:100%">Message</button>`;
                 document.getElementById('post-container').prepend(div);
             });
         });
+        db.ref('posts').on('child_removed', s => { if(document.getElementById('p-'+s.key)) document.getElementById('p-'+s.key).remove(); });
     }
 
     function addPost() {
@@ -161,6 +168,8 @@
         db.ref('posts').push({ uid: me.uid, t: t });
         document.getElementById('post-input').value = "";
     }
+
+    function deletePost(id) { if(confirm("Delete this post?")) db.ref('posts/'+id).remove(); }
 
     function openChat(uid, name, pic) {
         let cid = me.uid < uid ? me.uid+"_"+uid : uid+"_"+me.uid;
@@ -191,7 +200,10 @@
         selectedMsgs[cid] = [];
         db.ref('msgs/'+cid).limitToLast(30).on('child_added', s => {
             let d = s.val(); let b = document.getElementById('body-'+cid);
-            if(d.s !== me.uid && activeChat === cid) { db.ref(`msgs/${cid}/${s.key}`).update({seen: true}); msgTone.play(); }
+            if(d.s !== me.uid) {
+                if(activeChat === cid) db.ref(`msgs/${cid}/${s.key}`).update({seen: true});
+                msgTone.play().catch(e => {}); 
+            }
             
             getUser(d.s, ud => {
                 let mRow = document.createElement('div'); mRow.id = 'm-'+s.key;
@@ -231,7 +243,7 @@
     }
 
     function deleteMsgs(cid) {
-        if(confirm("Delete selected messages?")) {
+        if(confirm("Delete for everyone?")) {
             selectedMsgs[cid].forEach(mid => db.ref(`msgs/${cid}/${mid}`).remove());
             selectedMsgs[cid] = []; document.getElementById('del-'+cid).style.display = 'none';
         }
