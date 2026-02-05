@@ -31,7 +31,6 @@
         .edit-pic-label { display: block; width: 80px; height: 80px; margin: 10px auto; border-radius: 50%; border: 2px dashed #ccc; cursor: pointer; overflow: hidden; }
         .edit-pic-label img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Chat UI with Status & Pics */
         .chat-window { position: fixed; bottom: 0; right: 20px; width: 320px; height: 420px; background: white; border-radius: 12px 12px 0 0; box-shadow: 0 5px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; z-index: 2000; }
         .chat-header { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .chat-body { flex: 1; overflow-y: auto; padding: 10px; background: #f0f2f5; display: flex; flex-direction: column; gap: 12px; }
@@ -47,6 +46,7 @@
         
         .status-txt { font-size: 9px; margin-top: 2px; text-align: right; color: #888; display: block; }
         .selected .msg-bubble { border: 2px solid gold !important; }
+        .typing-indicator { font-size: 11px; color: var(--main); font-style: italic; display: none; }
     </style>
 </head>
 <body>
@@ -92,6 +92,7 @@
     const auth = firebase.auth(); const db = firebase.database();
     
     let me = null; let tempPic = ""; let selectedMsgs = {}; let activeChat = null;
+    const msgTone = new Audio('https://raw.githubusercontent.com/Anand906/Messenger-Tone/main/messenger_tone.mp3');
 
     auth.onAuthStateChanged(user => {
         if(user) {
@@ -156,7 +157,10 @@
         
         let win = document.createElement('div'); win.id = 'win-'+cid; win.className = 'chat-window';
         win.innerHTML = `<div class="chat-header">
-            <div style="display:flex; align-items:center; gap:8px"><img src="${pic}" class="chat-pic"><b>${name}</b></div>
+            <div style="display:flex; flex-direction:column">
+                <div style="display:flex; align-items:center; gap:8px"><img src="${pic}" class="chat-pic"><b>${name}</b></div>
+                <span id="typing-${cid}" class="typing-indicator">typing...</span>
+            </div>
             <div>
                 <i class="fas fa-trash" id="del-${cid}" style="display:none; color:red; cursor:pointer; margin-right:10px" onclick="deleteMsgs('${cid}')"></i>
                 <span onclick="activeChat=null; this.closest('.chat-window').remove()" style="cursor:pointer">&times;</span>
@@ -164,15 +168,23 @@
         </div>
         <div id="body-${cid}" class="chat-body"></div>
         <div style="padding:10px; display:flex; gap:5px; background:white">
-            <input id="in-${cid}" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:8px 15px; outline:none;" placeholder="Aa">
+            <input id="in-${cid}" oninput="updateTyping('${cid}')" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:8px 15px; outline:none;" placeholder="Aa">
             <button onclick="sendMsg('${cid}')" style="background:none; border:none; color:var(--fb-blue); font-size:20px;"><i class="fas fa-paper-plane"></i></button>
         </div>`;
         document.body.appendChild(win);
         
+        // Typing Listener
+        db.ref(`typing/${cid}/${uid}`).on('value', s => {
+            document.getElementById(`typing-${cid}`).style.display = s.val() ? 'block' : 'none';
+        });
+
         selectedMsgs[cid] = [];
         db.ref('msgs/'+cid).on('child_added', s => {
             let d = s.val(); let b = document.getElementById('body-'+cid);
-            if(d.s !== me.uid && activeChat === cid) db.ref(`msgs/${cid}/${s.key}`).update({seen: true});
+            if(d.s !== me.uid) {
+                if(activeChat === cid) db.ref(`msgs/${cid}/${s.key}`).update({seen: true});
+                msgTone.play(); // Play Tone on receive
+            }
             
             let mRow = document.createElement('div'); mRow.id = 'm-'+s.key;
             mRow.className = `msg-row ${d.s === me.uid ? 'msg-row-me msg-me' : 'msg-row-them msg-them'}`;
@@ -195,6 +207,12 @@
         db.ref('msgs/'+cid).on('child_removed', s => { if(document.getElementById('m-'+s.key)) document.getElementById('m-'+s.key).remove(); });
     }
 
+    function updateTyping(cid) {
+        db.ref(`typing/${cid}/${me.uid}`).set(true);
+        clearTimeout(window['t-'+cid]);
+        window['t-'+cid] = setTimeout(() => db.ref(`typing/${cid}/${me.uid}`).set(false), 2000);
+    }
+
     function toggleSelect(cid, mid) {
         let el = document.getElementById('m-'+mid); el.classList.toggle('selected');
         let idx = selectedMsgs[cid].indexOf(mid);
@@ -205,6 +223,7 @@
     function sendMsg(cid) {
         let i = document.getElementById('in-'+cid); if(!i.value.trim()) return;
         db.ref('msgs/'+cid).push({ s: me.uid, t: i.value, seen: false });
+        db.ref(`typing/${cid}/${me.uid}`).set(false);
         i.value = "";
     }
 
