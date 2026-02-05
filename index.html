@@ -120,7 +120,11 @@
         db.ref('users/'+uid).once('value', s => { userCache[uid] = s.val(); cb(s.val()); });
     }
 
-    function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+    function login() { 
+        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(() => {
+            msgTone.play().catch(e => {}); // Pre-load audio on login
+        }); 
+    }
     function openSettings() { document.getElementById('settings-modal').style.display='block'; }
     
     function processPic(input, type, cid) {
@@ -195,14 +199,23 @@
         </div>`;
         document.body.appendChild(win);
         
-        db.ref(`typing/${cid}/${uid}`).on('value', s => { if(document.getElementById(`typing-${cid}`)) document.getElementById(`typing-${cid}`).style.display = s.val() ? 'block' : 'none'; });
+        // Typing Status Fix
+        db.ref(`typing/${cid}/${uid}`).on('value', s => { 
+            let indicator = document.getElementById(`typing-${cid}`);
+            if(indicator) indicator.style.display = s.val() ? 'block' : 'none'; 
+        });
 
         selectedMsgs[cid] = [];
         db.ref('msgs/'+cid).limitToLast(30).on('child_added', s => {
             let d = s.val(); let b = document.getElementById('body-'+cid);
+            
+            // Tone and Seen Logic Fix
             if(d.s !== me.uid) {
                 if(activeChat === cid) db.ref(`msgs/${cid}/${s.key}`).update({seen: true});
-                msgTone.play().catch(e => {}); 
+                msgTone.play().catch(() => {
+                    // Browser requires interaction to play audio
+                    console.log("Audio waiting for user interaction");
+                }); 
             }
             
             getUser(d.s, ud => {
@@ -236,7 +249,7 @@
     }
 
     function sendMsg(cid, val, type) {
-        if(!val.trim()) return;
+        if(type === 'text' && !val.trim()) return;
         db.ref('msgs/'+cid).push({ s: me.uid, t: val, type: type, seen: false });
         db.ref(`typing/${cid}/${me.uid}`).set(false);
         let inp = document.getElementById('in-'+cid); if(inp) inp.value = "";
