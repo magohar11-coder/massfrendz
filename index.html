@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MassFrendz</title>
+    <title>MassFrendz - Secure</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <style>
         :root { --fb-purple: #a033ff; --fb-bg: #f3f0f7; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--fb-bg); }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--fb-bg); user-select: none; }
         nav { height: 56px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .logo { color: var(--fb-purple); font-size: 24px; font-weight: bold; text-decoration: none; }
+        .logo { color: var(--fb-purple); font-size: 24px; font-weight: bold; }
         .container { max-width: 600px; margin: 20px auto; padding: 0 10px; }
         .card { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .friend-list { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
@@ -22,27 +22,41 @@
         .chat-window { width: 300px; height: 400px; background: #fff; border-radius: 8px 8px 0 0; display: flex; flex-direction: column; box-shadow: 0 12px 28px rgba(0,0,0,0.2); pointer-events: auto; }
         .chat-header { background: #fff; padding: 10px; border-bottom: 1px solid #ddd; border-top: 3px solid var(--fb-purple); display: flex; justify-content: space-between; align-items: center; }
         .chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; background: #fff; }
-        .msg { max-width: 80%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; cursor: pointer; }
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; cursor: pointer; position: relative; }
         .msg.me { align-self: flex-end; background: var(--fb-purple); color: #fff; }
         .msg.them { align-self: flex-start; background: #efeff3; color: #050505; }
+        
+        /* Floating Delete Menu */
+        .del-menu { position: absolute; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1000; padding: 5px; display: none; }
+        .del-menu button { display: block; width: 100%; border: none; background: none; padding: 8px 12px; text-align: left; cursor: pointer; font-size: 13px; border-radius: 4px; }
+        .del-menu button:hover { background: #f0f0f0; }
+
         .chat-input { padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 5px; }
         .chat-input input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
         .block-btn { font-size: 10px; background: #ff4d4d; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
+
     <div id="login" style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
         <h1 style="color:var(--fb-purple); font-size:50px;">MassFrendz</h1>
-        <button onclick="login()" style="background:var(--fb-purple); color:white; border:none; padding:15px 30px; border-radius:6px; font-weight:bold; cursor:pointer;">Log In</button>
+        <p>Highly Secure Purple Mode</p>
+        <button onclick="login()" style="background:var(--fb-purple); color:white; border:none; padding:15px 30px; border-radius:6px; font-weight:bold; cursor:pointer;">Secure Login with Google</button>
     </div>
 
     <div id="app" style="display:none">
-        <nav><a href="#" class="logo">MassFrendz</a><button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Logout</button></nav>
+        <nav><div class="logo">MassFrendz</div><button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Logout</button></nav>
         <div class="container">
             <div class="card"><div id="friends" class="friend-list"></div></div>
             <div id="posts"></div>
         </div>
     </div>
+
+    <div id="customMenu" class="del-menu">
+        <button onclick="executeDel('me')">Delete for Me</button>
+        <button id="delEveryoneBtn" onclick="executeDel('everyone')">Delete for Everyone</button>
+    </div>
+
     <div class="chat-container" id="chatArea"></div>
 
     <script>
@@ -56,9 +70,10 @@
         const auth = firebase.auth();
         const db = firebase.database();
         let me = null;
+        let activeMsg = null; // Store data for deletion
 
         auth.onAuthStateChanged(user => {
-            if (user) {
+            if (user && user.email) { // Strict check for email
                 me = user;
                 document.getElementById('login').style.display = "none";
                 document.getElementById('app').style.display = "block";
@@ -72,7 +87,7 @@
         });
 
         function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-        function logout() { db.ref("users/"+me.uid).update({online:false}); auth.signOut(); }
+        function logout() { if(me) db.ref("users/"+me.uid).update({online:false}); auth.signOut(); }
 
         function loadFriends() {
             db.ref("users").on("value", snap => {
@@ -102,7 +117,7 @@
                         <span style="cursor:pointer" onclick="document.getElementById('${cid}').remove()">✖</span>
                     </div>
                     <div class="chat-body" id="body_${cid}"></div>
-                    <div class="chat-input" id="input_box_${cid}">
+                    <div class="chat-input">
                         ${(blockedByMe || blockedByThem) ? '<small style="color:red;width:100%;text-align:center">Chat Disabled</small>' : 
                         `<input type="text" id="inp_${cid}" placeholder="Aa" oninput="isTyping('${cid}')" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
                         <button onclick="sendMsg('${cid}')" style="color:var(--fb-purple); background:none; border:none; font-weight:bold; cursor:pointer;">Send</button>`}
@@ -110,23 +125,52 @@
                 </div>`;
             document.getElementById('chatArea').insertAdjacentHTML('beforeend', chatHtml);
 
-            db.ref(`typing/${cid}/${uid}`).on("value", s => {
-                const titleElem = document.getElementById(`title_${cid}`);
-                if(titleElem) titleElem.innerText = s.val() ? "Typing..." : name;
-            });
-
             db.ref("msgs/" + cid).on("value", snap => {
                 let msgDiv = document.getElementById("body_" + cid); 
                 if(!msgDiv) return;
                 msgDiv.innerHTML = "";
                 snap.forEach(s => {
                     let m = s.val();
-                    if (m.deletedForMe === me.uid || m.everyone === true) return; // Ghost Delete: Everyone hone par dikhao hi mat
-                    msgDiv.innerHTML += `<div class="msg ${m.s === me.uid ? 'me' : 'them'}" onclick="msgOptions('${cid}','${s.key}','${m.s}')">${m.t}</div>`;
+                    if (m.deletedForMe === me.uid || m.everyone === true) return;
+                    
+                    let msgElem = document.createElement("div");
+                    msgElem.className = `msg ${m.s === me.uid ? 'me' : 'them'}`;
+                    msgElem.innerText = m.t;
+                    
+                    // Handle Long Press / Right Click
+                    msgElem.oncontextmenu = (e) => showMenu(e, cid, s.key, m.s);
+                    
+                    msgDiv.appendChild(msgElem);
                 });
                 msgDiv.scrollTop = msgDiv.scrollHeight;
             });
         }
+
+        function showMenu(e, cid, mid, sender) {
+            e.preventDefault();
+            activeMsg = { cid, mid, sender };
+            const menu = document.getElementById("customMenu");
+            menu.style.display = "block";
+            menu.style.left = e.pageX + "px";
+            menu.style.top = e.pageY + "px";
+            
+            // Show "Everyone" option only if I sent it (or as per your GF-control logic)
+            // If you want to delete GF's message too, keep this always visible:
+            document.getElementById("delEveryoneBtn").style.display = "block"; 
+        }
+
+        function executeDel(type) {
+            if(!activeMsg) return;
+            if (type === 'me') {
+                db.ref(`msgs/${activeMsg.cid}/${activeMsg.mid}/deletedForMe`).set(me.uid);
+            } else {
+                db.ref(`msgs/${activeMsg.cid}/${activeMsg.mid}`).update({ everyone: true });
+            }
+            document.getElementById("customMenu").style.display = "none";
+        }
+
+        // Hide menu on click elsewhere
+        document.addEventListener("click", () => { document.getElementById("customMenu").style.display = "none"; });
 
         function toggleBlock(uid, cid) {
             let ref = db.ref(`blocks/${me.uid}/${uid}`);
@@ -140,16 +184,6 @@
             db.ref(`typing/${cid}/${me.uid}`).set(true);
             clearTimeout(window['t_'+cid]);
             window['t_'+cid] = setTimeout(() => db.ref(`typing/${cid}/${me.uid}`).set(false), 2000);
-        }
-
-        function msgOptions(cid, mid, sender) {
-            let opt = prompt("1: Delete for Me\n2: Delete for Everyone (Clear Everywhere)");
-            if (opt == "1") {
-                db.ref(`msgs/${cid}/${mid}/deletedForMe`).set(me.uid);
-            } else if (opt == "2") {
-                // Ghost Delete Logic: Database se gayab nahi kar rahe, flag set kar rahe hain jo render nahi hoga
-                db.ref(`msgs/${cid}/${mid}`).update({ everyone: true });
-            }
         }
 
         function sendMsg(cid) {
