@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MassFrendz - Secure</title>
+    <title>MassFrendz - Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -18,30 +18,34 @@
         .friend { text-align: center; min-width: 70px; cursor: pointer; position: relative; }
         .friend img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--fb-purple); }
         .online-dot { position: absolute; bottom: 15px; right: 10px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; }
+        
         .chat-container { position: fixed; bottom: 0; right: 20px; display: flex; align-items: flex-end; gap: 10px; pointer-events: none; }
-        .chat-window { width: 300px; height: 400px; background: #fff; border-radius: 8px 8px 0 0; display: flex; flex-direction: column; box-shadow: 0 12px 28px rgba(0,0,0,0.2); pointer-events: auto; }
+        .chat-window { width: 320px; height: 450px; background: #fff; border-radius: 8px 8px 0 0; display: flex; flex-direction: column; box-shadow: 0 12px 28px rgba(0,0,0,0.2); pointer-events: auto; }
         .chat-header { background: #fff; padding: 10px; border-bottom: 1px solid #ddd; border-top: 3px solid var(--fb-purple); display: flex; justify-content: space-between; align-items: center; }
-        .chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; background: #fff; }
-        .msg { max-width: 80%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; cursor: pointer; position: relative; }
+        .chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; background: #fff; position: relative; }
+        
+        .msg { max-width: 75%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; cursor: pointer; transition: 0.2s; position: relative; }
         .msg.me { align-self: flex-end; background: var(--fb-purple); color: #fff; }
         .msg.them { align-self: flex-start; background: #efeff3; color: #050505; }
-        
-        /* Floating Delete Menu */
-        .del-menu { position: absolute; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1000; padding: 5px; display: none; }
-        .del-menu button { display: block; width: 100%; border: none; background: none; padding: 8px 12px; text-align: left; cursor: pointer; font-size: 13px; border-radius: 4px; }
-        .del-menu button:hover { background: #f0f0f0; }
+        .msg.selected { opacity: 0.5; transform: scale(0.95); border: 2px solid var(--fb-purple); }
+
+        .selection-bar { display: none; background: var(--fb-purple); color: white; padding: 10px; justify-content: space-between; align-items: center; font-size: 14px; }
+        .selection-bar button { background: white; color: var(--fb-purple); border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
         .chat-input { padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 5px; }
         .chat-input input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
-        .block-btn { font-size: 10px; background: #ff4d4d; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
+        
+        .menu-dots { cursor: pointer; padding: 5px; font-size: 18px; }
+        .dropdown { position: absolute; right: 10px; top: 45px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); border-radius: 5px; display: none; z-index: 10; }
+        .dropdown div { padding: 10px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .dropdown div:hover { background: #f5f5f5; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
     <div id="login" style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
         <h1 style="color:var(--fb-purple); font-size:50px;">MassFrendz</h1>
-        <p>Highly Secure Purple Mode</p>
-        <button onclick="login()" style="background:var(--fb-purple); color:white; border:none; padding:15px 30px; border-radius:6px; font-weight:bold; cursor:pointer;">Secure Login with Google</button>
+        <button onclick="login()" style="background:var(--fb-purple); color:white; border:none; padding:15px 30px; border-radius:6px; font-weight:bold; cursor:pointer;">Login with Gmail</button>
     </div>
 
     <div id="app" style="display:none">
@@ -50,11 +54,6 @@
             <div class="card"><div id="friends" class="friend-list"></div></div>
             <div id="posts"></div>
         </div>
-    </div>
-
-    <div id="customMenu" class="del-menu">
-        <button onclick="executeDel('me')">Delete for Me</button>
-        <button id="delEveryoneBtn" onclick="executeDel('everyone')">Delete for Everyone</button>
     </div>
 
     <div class="chat-container" id="chatArea"></div>
@@ -70,10 +69,10 @@
         const auth = firebase.auth();
         const db = firebase.database();
         let me = null;
-        let activeMsg = null; // Store data for deletion
+        let selectedMsgs = {}; // Track selected messages per chat
 
         auth.onAuthStateChanged(user => {
-            if (user && user.email) { // Strict check for email
+            if (user && user.email) {
                 me = user;
                 document.getElementById('login').style.display = "none";
                 document.getElementById('app').style.display = "block";
@@ -95,9 +94,8 @@
                 snap.forEach(child => {
                     if (child.key === me.uid) return;
                     let u = child.val();
-                    let statusColor = u.online ? "#42b72a" : "#ccc";
                     fDiv.innerHTML += `<div class="friend" onclick="openChat('${child.key}','${u.name}')">
-                        <img src="${u.pic}"><div class="online-dot" style="background:${statusColor}"></div>
+                        <img src="${u.pic}"><div class="online-dot" style="background:${u.online ? '#42b72a' : '#ccc'}"></div>
                         <br><small>${u.name.split(' ')[0]}</small></div>`;
                 });
             });
@@ -106,84 +104,113 @@
         async function openChat(uid, name) {
             let cid = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
             if (document.getElementById(cid)) return;
-
-            let blockedByMe = (await db.ref(`blocks/${me.uid}/${uid}`).once('value')).val();
-            let blockedByThem = (await db.ref(`blocks/${uid}/${me.uid}`).once('value')).val();
+            selectedMsgs[cid] = [];
 
             let chatHtml = `
                 <div class="chat-window" id="${cid}">
-                    <div class="chat-header">
-                        <div><b id="title_${cid}">${name}</b><button class="block-btn" onclick="toggleBlock('${uid}','${cid}')">${blockedByMe ? 'Unblock' : 'Block'}</button></div>
-                        <span style="cursor:pointer" onclick="document.getElementById('${cid}').remove()">✖</span>
+                    <div class="selection-bar" id="bar_${cid}">
+                        <span id="count_${cid}">0 Selected</span>
+                        <div>
+                            <button onclick="deleteSelected('${cid}', 'me')">For Me</button>
+                            <button onclick="deleteSelected('${cid}', 'everyone')">Everyone</button>
+                            <button onclick="cancelSelection('${cid}')" style="background:none;color:white;">X</button>
+                        </div>
+                    </div>
+                    <div class="chat-header" id="head_${cid}">
+                        <b>${name}</b>
+                        <div style="display:flex; align-items:center;">
+                            <div class="menu-dots" onclick="toggleDrop('${cid}')">⋮</div>
+                            <span style="cursor:pointer; margin-left:10px;" onclick="document.getElementById('${cid}').remove()">✖</span>
+                        </div>
+                        <div class="dropdown" id="drop_${cid}">
+                            <div onclick="clearChat('${cid}', 'me')">Clear All (For Me)</div>
+                            <div onclick="clearChat('${cid}', 'everyone')">Clear All (For Everyone)</div>
+                        </div>
                     </div>
                     <div class="chat-body" id="body_${cid}"></div>
-                    <div class="chat-input">
-                        ${(blockedByMe || blockedByThem) ? '<small style="color:red;width:100%;text-align:center">Chat Disabled</small>' : 
-                        `<input type="text" id="inp_${cid}" placeholder="Aa" oninput="isTyping('${cid}')" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
-                        <button onclick="sendMsg('${cid}')" style="color:var(--fb-purple); background:none; border:none; font-weight:bold; cursor:pointer;">Send</button>`}
+                    <div class="chat-input" id="input_${cid}">
+                        <input type="text" id="inp_${cid}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
+                        <button onclick="sendMsg('${cid}')" style="color:var(--fb-purple); background:none; border:none; font-weight:bold; cursor:pointer;">Send</button>
                     </div>
                 </div>`;
             document.getElementById('chatArea').insertAdjacentHTML('beforeend', chatHtml);
 
             db.ref("msgs/" + cid).on("value", snap => {
-                let msgDiv = document.getElementById("body_" + cid); 
+                let msgDiv = document.getElementById("body_" + cid);
                 if(!msgDiv) return;
                 msgDiv.innerHTML = "";
                 snap.forEach(s => {
                     let m = s.val();
                     if (m.deletedForMe === me.uid || m.everyone === true) return;
                     
-                    let msgElem = document.createElement("div");
-                    msgElem.className = `msg ${m.s === me.uid ? 'me' : 'them'}`;
-                    msgElem.innerText = m.t;
+                    let div = document.createElement("div");
+                    div.className = `msg ${m.s === me.uid ? 'me' : 'them'}`;
+                    div.innerText = m.t;
+                    div.id = `m_${cid}_${s.key}`;
                     
-                    // Handle Long Press / Right Click
-                    msgElem.oncontextmenu = (e) => showMenu(e, cid, s.key, m.s);
+                    // Multi-select logic
+                    div.oncontextmenu = (e) => { e.preventDefault(); startSelection(cid, s.key); };
+                    div.onclick = () => { if(selectedMsgs[cid].length > 0) toggleSelect(cid, s.key); };
                     
-                    msgDiv.appendChild(msgElem);
+                    msgDiv.appendChild(div);
                 });
                 msgDiv.scrollTop = msgDiv.scrollHeight;
             });
         }
 
-        function showMenu(e, cid, mid, sender) {
-            e.preventDefault();
-            activeMsg = { cid, mid, sender };
-            const menu = document.getElementById("customMenu");
-            menu.style.display = "block";
-            menu.style.left = e.pageX + "px";
-            menu.style.top = e.pageY + "px";
-            
-            // Show "Everyone" option only if I sent it (or as per your GF-control logic)
-            // If you want to delete GF's message too, keep this always visible:
-            document.getElementById("delEveryoneBtn").style.display = "block"; 
+        function toggleDrop(cid) {
+            let d = document.getElementById(`drop_${cid}`);
+            d.style.display = d.style.display === "block" ? "none" : "block";
         }
 
-        function executeDel(type) {
-            if(!activeMsg) return;
-            if (type === 'me') {
-                db.ref(`msgs/${activeMsg.cid}/${activeMsg.mid}/deletedForMe`).set(me.uid);
+        function startSelection(cid, mid) {
+            if(!selectedMsgs[cid].includes(mid)) toggleSelect(cid, mid);
+            document.getElementById(`bar_${cid}`).style.display = "flex";
+            document.getElementById(`head_${cid}`).style.display = "none";
+        }
+
+        function toggleSelect(cid, mid) {
+            let idx = selectedMsgs[cid].indexOf(mid);
+            let el = document.getElementById(`m_${cid}_${mid}`);
+            if(idx > -1) {
+                selectedMsgs[cid].splice(idx, 1);
+                el.classList.remove("selected");
             } else {
-                db.ref(`msgs/${activeMsg.cid}/${activeMsg.mid}`).update({ everyone: true });
+                selectedMsgs[cid].push(mid);
+                el.classList.add("selected");
             }
-            document.getElementById("customMenu").style.display = "none";
+            document.getElementById(`count_${cid}`).innerText = selectedMsgs[cid].length + " Selected";
+            if(selectedMsgs[cid].length === 0) cancelSelection(cid);
         }
 
-        // Hide menu on click elsewhere
-        document.addEventListener("click", () => { document.getElementById("customMenu").style.display = "none"; });
-
-        function toggleBlock(uid, cid) {
-            let ref = db.ref(`blocks/${me.uid}/${uid}`);
-            ref.once('value', s => {
-                if (s.exists()) ref.remove(); else ref.set(true);
-                document.getElementById(cid).remove();
+        function cancelSelection(cid) {
+            selectedMsgs[cid].forEach(mid => {
+                let el = document.getElementById(`m_${cid}_${mid}`);
+                if(el) el.classList.remove("selected");
             });
+            selectedMsgs[cid] = [];
+            document.getElementById(`bar_${cid}`).style.display = "none";
+            document.getElementById(`head_${cid}`).style.display = "flex";
         }
 
-        function isTyping(cid) {
-            db.ref(`typing/${cid}/${me.uid}`).set(true);
-            clearTimeout(window['t_'+cid]);
-            window['t_'+cid] = setTimeout(() => db.ref(`typing/${cid}/${me.uid}`).set(false), 2000);
+        function deleteSelected(cid, type) {
+            if(!confirm(`Delete ${selectedMsgs[cid].length} messages for ${type}?`)) return;
+            selectedMsgs[cid].forEach(mid => {
+                if(type === 'me') db.ref(`msgs/${cid}/${mid}/deletedForMe`).set(me.uid);
+                else db.ref(`msgs/${cid}/${mid}`).update({ everyone: true });
+            });
+            cancelSelection(cid);
+        }
+
+        function clearChat(cid, type) {
+            if(!confirm(`Clear entire chat for ${type}?`)) return;
+            db.ref("msgs/" + cid).once("value", snap => {
+                snap.forEach(s => {
+                    if(type === 'me') db.ref(`msgs/${cid}/${s.key}/deletedForMe`).set(me.uid);
+                    else db.ref(`msgs/${cid}/${s.key}`).update({ everyone: true });
+                });
+            });
+            toggleDrop(cid);
         }
 
         function sendMsg(cid) {
@@ -191,7 +218,6 @@
             if (!inp.value.trim()) return;
             db.ref("msgs/" + cid).push({ s: me.uid, t: inp.value, time: Date.now(), everyone: false });
             inp.value = "";
-            db.ref(`typing/${cid}/${me.uid}`).set(false);
         }
     </script>
 </body>
