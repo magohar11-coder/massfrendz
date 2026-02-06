@@ -12,38 +12,26 @@
     <style>
         :root { --fb-blue: #1877f2; --fb-bg: #f0f2f5; }
         body { margin: 0; font-family: 'Segoe UI', Tahoma, Helvetica, sans-serif; background: var(--fb-bg); color: #1c1e21; }
-        
-        /* Navbar like Facebook */
         nav { height: 56px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .logo { color: var(--fb-blue); font-size: 24px; font-weight: bold; text-decoration: none; }
-        
         .container { max-width: 600px; margin: 20px auto; padding: 0 10px; }
         .card { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        
-        /* Inputs & Buttons */
         textarea { width: 100%; border: none; background: #f0f2f5; border-radius: 20px; padding: 12px; resize: none; outline: none; box-sizing: border-box; font-size: 15px; }
         .btn-post { background: var(--fb-blue); color: #fff; border: none; width: 100%; padding: 8px; border-radius: 6px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        
-        /* Friends Section */
         .friend-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
-        .friend { text-align: center; min-width: 70px; cursor: pointer; }
+        .friend { text-align: center; min-width: 70px; cursor: pointer; position: relative; }
         .friend img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--fb-blue); padding: 2px; }
-        .friend-name { font-size: 11px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* Chat System */
         .chat-container { position: fixed; bottom: 0; right: 20px; display: flex; align-items: flex-end; gap: 10px; pointer-events: none; }
         .chat-window { width: 300px; height: 400px; background: #fff; border-radius: 8px 8px 0 0; display: flex; flex-direction: column; box-shadow: 0 12px 28px rgba(0,0,0,0.2); pointer-events: auto; }
-        .chat-header { background: #fff; padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; border-radius: 8px 8px 0 0; border-top: 3px solid var(--fb-blue); }
+        .chat-header { background: #fff; padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; border-radius: 8px 8px 0 0; border-top: 3px solid var(--fb-blue); align-items: center;}
         .chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; background: #fff; }
-        
-        .msg { max-width: 80%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; }
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; cursor: pointer; position: relative; }
         .msg.me { align-self: flex-end; background: var(--fb-blue); color: #fff; }
         .msg.them { align-self: flex-start; background: #e4e6eb; color: #050505; }
-        
         .chat-input { padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 5px; }
         .chat-input input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
-
         #login { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; }
+        .blocked-label { font-size: 12px; color: red; text-align: center; padding: 5px; }
     </style>
 </head>
 <body>
@@ -66,12 +54,10 @@
             <div class="card">
                 <div id="friends" class="friend-list"></div>
             </div>
-
             <div class="card">
                 <textarea id="postTxt" rows="2" placeholder="What's on your mind?"></textarea>
                 <button class="btn-post" onclick="addPost()">Post</button>
             </div>
-
             <div id="posts"></div>
         </div>
     </div>
@@ -79,7 +65,6 @@
     <div class="chat-container" id="chatArea"></div>
 
     <script>
-        // Use your provided config
         const firebaseConfig = {
             apiKey: "AIzaSyAuGZse8FQyqM8XWeGFnvKTVSHy9etU0TA",
             authDomain: "massfrendz.firebaseapp.com",
@@ -98,13 +83,7 @@
                 document.getElementById('login').style.display = "none";
                 document.getElementById('app').style.display = "block";
                 document.getElementById('myPic').src = user.photoURL;
-                
-                db.ref("users/" + user.uid).update({
-                    name: user.displayName,
-                    pic: user.photoURL,
-                    online: true
-                });
-
+                db.ref("users/" + user.uid).update({ name: user.displayName, pic: user.photoURL, online: true });
                 loadFriends();
                 loadPosts();
             } else {
@@ -158,31 +137,76 @@
             });
         }
 
-        function openChat(uid, name) {
+        function toggleBlock(uid, cid) {
+            db.ref(`blocks/${me.uid}/${uid}`).once('value', s => {
+                if (s.exists()) {
+                    db.ref(`blocks/${me.uid}/${uid}`).remove();
+                    alert("Unblocked!");
+                } else {
+                    db.ref(`blocks/${me.uid}/${uid}`).set(true);
+                    alert("Blocked!");
+                }
+                document.getElementById(cid).remove();
+            });
+        }
+
+        async function openChat(uid, name) {
             let cid = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
             if (document.getElementById(cid)) return;
+
+            // Check if blocked
+            const myBlock = (await db.ref(`blocks/${me.uid}/${uid}`).once('value')).val();
+            const theirBlock = (await db.ref(`blocks/${uid}/${me.uid}`).once('value')).val();
 
             let chatHtml = `
                 <div class="chat-window" id="${cid}">
                     <div class="chat-header">
                         <b>${name}</b>
-                        <span style="cursor:pointer" onclick="document.getElementById('${cid}').remove()">✖</span>
+                        <div style="display:flex; gap:10px;">
+                            <span style="cursor:pointer; font-size:12px; color:red" onclick="toggleBlock('${uid}','${cid}')">${myBlock ? 'Unblock' : 'Block'}</span>
+                            <span style="cursor:pointer" onclick="document.getElementById('${cid}').remove()">✖</span>
+                        </div>
                     </div>
                     <div class="chat-body" id="body_${cid}"></div>
-                    <div class="chat-input">
-                        <input type="text" id="inp_${cid}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
-                        <button onclick="sendMsg('${cid}')" style="background:none; border:none; color:var(--fb-blue); font-weight:bold; cursor:pointer;">Send</button>
+                    <div class="chat-input" id="input_${cid}">
+                        ${(myBlock || theirBlock) ? '<div class="blocked-label">You cannot message this user</div>' : 
+                        `<input type="text" id="inp_${cid}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
+                        <button onclick="sendMsg('${cid}')" style="background:none; border:none; color:var(--fb-blue); font-weight:bold; cursor:pointer;">Send</button>`}
                     </div>
                 </div>`;
             document.getElementById('chatArea').insertAdjacentHTML('beforeend', chatHtml);
 
-            // Fetch Messages Fast
-            db.ref("msgs/" + cid).limitToLast(30).on("child_added", s => {
-                let m = s.val();
-                let msgDiv = document.getElementById("body_" + cid);
-                msgDiv.innerHTML += `<div class="msg ${m.s === me.uid ? 'me' : 'them'}">${m.t}</div>`;
-                msgDiv.scrollTop = msgDiv.scrollHeight;
+            db.ref("msgs/" + cid).on("child_added", s => {
+                renderMsg(s, cid);
             });
+            db.ref("msgs/" + cid).on("child_removed", s => {
+                let mElem = document.getElementById("msg_"+s.key);
+                if(mElem) mElem.remove();
+            });
+        }
+
+        function renderMsg(s, cid) {
+            let m = s.val();
+            let msgId = s.key;
+            if (m.deletedFor && m.deletedFor[me.uid]) return;
+            
+            let msgDiv = document.getElementById("body_" + cid);
+            let html = `<div class="msg ${m.s === me.uid ? 'me' : 'them'}" id="msg_${msgId}" onclick="msgOptions('${cid}','${msgId}','${m.s}')">
+                ${m.everyone ? '<i>Message deleted</i>' : m.t}
+            </div>`;
+            msgDiv.insertAdjacentHTML('beforeend', html);
+            msgDiv.scrollTop = msgDiv.scrollHeight;
+        }
+
+        function msgOptions(cid, mid, sender) {
+            let opt = prompt("1: Delete for Me\n2: Delete for Everyone (If you sent it)");
+            if (opt == "1") {
+                db.ref(`msgs/${cid}/${mid}/deletedFor/${me.uid}`).set(true);
+                document.getElementById("msg_"+mid).remove();
+            } else if (opt == "2" && sender === me.uid) {
+                db.ref(`msgs/${cid}/${mid}`).update({ t: "Message deleted", everyone: true });
+                location.reload(); // Quick refresh to update state
+            }
         }
 
         function sendMsg(cid) {
