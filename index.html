@@ -13,17 +13,15 @@
         nav { height: 56px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .logo { color: var(--fb-purple); font-size: 24px; font-weight: bold; }
         .nav-right { display: flex; align-items: center; gap: 10px; }
-        #myPicNav { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 2px solid var(--fb-purple); }
+        #myPicNav { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 2px solid var(--fb-purple); object-fit: cover; }
         
         .container { max-width: 600px; margin: 20px auto; padding: 0 10px; }
         .card { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        
-        /* Search Box */
         .search-box { width: 100%; padding: 8px; border-radius: 20px; border: 1px solid #ddd; background: #f0f2f5; outline: none; margin-bottom: 10px; box-sizing: border-box; }
         
         .friend-list { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
         .friend { text-align: center; min-width: 70px; cursor: pointer; position: relative; }
-        .friend img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--fb-purple); }
+        .friend img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--fb-purple); object-fit: cover; }
         .online-dot { position: absolute; bottom: 15px; right: 10px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; }
         
         .chat-container { position: fixed; bottom: 0; right: 20px; display: flex; align-items: flex-end; gap: 10px; pointer-events: none; }
@@ -47,6 +45,8 @@
         .dropdown div { padding: 10px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #eee; }
         .dropdown div:hover { background: #f5f5f5; }
         .blocked-info { color: red; font-size: 12px; text-align: center; padding: 5px; width: 100%; }
+        
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
@@ -60,7 +60,9 @@
         <nav>
             <div class="logo">MassFrendz</div>
             <div class="nav-right">
-                <img id="myPicNav" title="Update Profile" onclick="updateProfile()">
+                <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)">
+                <img id="myPicNav" title="Click to change Profile" onclick="triggerUpload()">
+                <button onclick="updateName()" style="background:none; border:none; color:var(--fb-purple); font-weight:bold; cursor:pointer;">Edit Name</button>
                 <button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Logout</button>
             </div>
         </nav>
@@ -69,7 +71,6 @@
                 <input type="text" class="search-box" id="searchFriend" placeholder="Search friends..." oninput="loadFriends()">
                 <div id="friends" class="friend-list"></div>
             </div>
-            <div id="posts"></div>
         </div>
     </div>
 
@@ -89,16 +90,19 @@
         let selectedMsgs = {}; 
 
         auth.onAuthStateChanged(user => {
-            if (user && user.email) {
+            if (user) {
                 me = user;
                 document.getElementById('login').style.display = "none";
                 document.getElementById('app').style.display = "block";
                 
-                // Sync profile and Nav Pic
                 db.ref("users/" + user.uid).on("value", s => {
                     let data = s.val() || {};
-                    document.getElementById('myPicNav').src = data.pic || user.photoURL;
-                    if(!s.exists()) db.ref("users/" + user.uid).set({ name: user.displayName, pic: user.photoURL, online: true });
+                    if(data.pic) document.getElementById('myPicNav').src = data.pic;
+                    else document.getElementById('myPicNav').src = user.photoURL;
+                    
+                    if(!s.exists()) {
+                        db.ref("users/" + user.uid).set({ name: user.displayName, pic: user.photoURL, online: true });
+                    }
                 });
 
                 db.ref("users/" + user.uid).update({ online: true });
@@ -113,24 +117,39 @@
         function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
         function logout() { if(me) db.ref("users/"+me.uid).update({online:false}); auth.signOut(); }
 
-        // --- NEW: Profile Update ---
-        function updateProfile() {
-            let newName = prompt("Enter new name:", me.displayName);
-            let newPic = prompt("Enter Profile Image URL:");
-            if(newName) db.ref("users/"+me.uid).update({ name: newName });
-            if(newPic) db.ref("users/"+me.uid).update({ pic: newPic });
+        // --- NEW: Direct Upload System ---
+        function triggerUpload() { document.getElementById('fileInput').click(); }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Image = e.target.result;
+                    db.ref("users/" + me.uid).update({ pic: base64Image });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateName() {
+            let newName = prompt("Enter your new name:");
+            if (newName && newName.trim() !== "") {
+                db.ref("users/" + me.uid).update({ name: newName.trim() })
+                .then(() => alert("Name updated successfully!"));
+            }
         }
 
         function loadFriends() {
             let filter = document.getElementById('searchFriend').value.toLowerCase();
-            db.ref("users").once("value", snap => {
+            db.ref("users").on("value", snap => {
                 const fDiv = document.getElementById('friends'); fDiv.innerHTML = "";
                 snap.forEach(child => {
                     if (child.key === me.uid) return;
                     let u = child.val();
                     if(u.name.toLowerCase().includes(filter)) {
                         fDiv.innerHTML += `<div class="friend" onclick="openChat('${child.key}','${u.name}')">
-                            <img src="${u.pic}"><div class="online-dot" style="background:${u.online ? '#42b72a' : '#ccc'}"></div>
+                            <img src="${u.pic || 'https://via.placeholder.com/50'}"><div class="online-dot" style="background:${u.online ? '#42b72a' : '#ccc'}"></div>
                             <br><small>${u.name.split(' ')[0]}</small></div>`;
                     }
                 });
@@ -142,7 +161,6 @@
             if (document.getElementById(cid)) return;
             selectedMsgs[cid] = [];
 
-            // Check Block Status
             let myBlock = (await db.ref(`blocks/${me.uid}/${uid}`).once('value')).val();
             let theirBlock = (await db.ref(`blocks/${uid}/${me.uid}`).once('value')).val();
 
@@ -170,7 +188,7 @@
                     </div>
                     <div class="chat-body" id="body_${cid}"></div>
                     <div class="chat-input" id="input_${cid}">
-                        ${(myBlock || theirBlock) ? '<div class="blocked-info">You cannot send messages</div>' : 
+                        ${(myBlock || theirBlock) ? '<div class="blocked-info">Chat is blocked</div>' : 
                         `<input type="text" id="inp_${cid}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
                         <button onclick="sendMsg('${cid}')" style="color:var(--fb-purple); background:none; border:none; font-weight:bold; cursor:pointer;">Send</button>`}
                     </div>
@@ -196,12 +214,11 @@
             });
         }
 
-        // --- NEW: Toggle Block ---
         function toggleBlock(uid, cid) {
             let ref = db.ref(`blocks/${me.uid}/${uid}`);
             ref.once('value', s => {
                 if(s.exists()) ref.remove(); else ref.set(true);
-                document.getElementById(cid).remove(); // Refresh chat window
+                document.getElementById(cid).remove();
             });
         }
 
