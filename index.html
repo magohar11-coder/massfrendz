@@ -169,7 +169,7 @@
                         </div>
                     </div>
                     <div class="chat-header" id="head_${cid}">
-                        <div><b>${name}</b><br><small id="type_${cid}" style="color:var(--fb-purple); font-weight:bold; display:none">typing...</small></div>
+                        <div><b>${name}</b><br><small id="type_${cid}" style="color:var(--fb-purple);display:none">typing...</small></div>
                         <div style="display:flex; align-items:center;">
                             <div class="menu-dots" onclick="toggleDrop('${cid}')">⋮</div>
                             <span style="cursor:pointer; margin-left:10px;" onclick="closeChat('${cid}')">✖</span>
@@ -191,29 +191,18 @@
                 </div>`;
             document.getElementById('chatArea').insertAdjacentHTML('beforeend', chatHtml);
 
-            // Correct Message Flow to prevent duplication
+            // NO DUPLICATE: Using Child Added and Child Changed for messages
             const msgRef = db.ref(`msgs/${cid}`);
             msgRef.on("child_added", s => renderMsg(cid, s));
             msgRef.on("child_changed", s => {
-                const msgEl = document.getElementById(`m_${cid}_${s.key}`);
-                const seenEl = document.getElementById(`seen_${s.key}`);
-                // If message content or seen status changed, we update that specific element
-                if (s.val().seen && s.val().s === me.uid && !seenEl) {
-                     let seenTag = document.createElement("div");
-                     seenTag.className = "seen-status"; seenTag.innerText = "Seen";
-                     seenTag.id = `seen_${s.key}`;
-                     msgEl.after(seenTag);
-                }
-                if (s.val().everyone || s.val().deletedForMe === me.uid) {
-                    if (msgEl) msgEl.remove();
-                    if (seenEl) seenEl.remove();
-                }
+                const el = document.getElementById(`m_${cid}_${s.key}`);
+                if(el) { document.getElementById(`body_${cid}`).innerHTML = ""; msgRef.once('value', snap => snap.forEach(child => renderMsg(cid, child))); }
             });
 
-            // FIXED TYPING LISTENER: Monitoring the OTHER user's typing node
-            db.ref(`typing/${cid}/${uid}`).on("value", snap => {
-                const typingLabel = document.getElementById(`type_${cid}`);
-                if (typingLabel) typingLabel.style.display = snap.val() ? "block" : "none";
+            // Typing listener for THIS specific chat
+            db.ref(`typing/${cid}/${uid}`).on("value", s => {
+                let tLabel = document.getElementById(`type_${cid}`);
+                if(tLabel) tLabel.style.display = s.val() ? "block" : "none";
             });
         }
 
@@ -222,7 +211,7 @@
             let msgDiv = document.getElementById("body_" + cid);
             if(!msgDiv || m.deletedForMe === me.uid || m.everyone === true) return;
 
-            // Mark received messages as seen
+            // Mark as seen if it's from the other person
             if (m.s !== me.uid && !m.seen) db.ref(`msgs/${cid}/${s.key}/seen`).set(true);
 
             let div = document.createElement("div");
