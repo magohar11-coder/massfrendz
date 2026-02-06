@@ -33,12 +33,14 @@
         .msg { max-width: 75%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; cursor: pointer; transition: 0.2s; position: relative; }
         .msg.me { align-self: flex-end; background: var(--fb-purple); color: #fff; }
         .msg.them { align-self: flex-start; background: #efeff3; color: #050505; }
+        .msg img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
         .msg.selected { opacity: 0.5; transform: scale(0.95); border: 2px solid var(--fb-purple); }
+        .seen-status { font-size: 10px; color: var(--fb-purple); align-self: flex-end; margin-right: 5px; }
 
         .selection-bar { display: none; background: var(--fb-purple); color: white; padding: 10px; justify-content: space-between; align-items: center; font-size: 14px; }
         .selection-bar button { background: white; color: var(--fb-purple); border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
 
-        .chat-input { padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 5px; }
+        .chat-input { padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 5px; align-items: center; }
         .chat-input input { flex: 1; border: none; background: #f0f2f5; padding: 8px 12px; border-radius: 20px; outline: none; }
         
         .menu-dots { cursor: pointer; padding: 5px; font-size: 18px; }
@@ -47,7 +49,7 @@
         .dropdown div:hover { background: #f5f5f5; }
         .blocked-info { color: red; font-size: 12px; text-align: center; padding: 5px; width: 100%; }
         
-        #fileInput { display: none; }
+        #fileInput, .chatMediaInput { display: none; }
     </style>
 </head>
 <body>
@@ -90,6 +92,7 @@
         const db = firebase.database();
         let me = null;
         let selectedMsgs = {}; 
+        let activeChats = {};
 
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -99,13 +102,9 @@
                 
                 db.ref("users/" + user.uid).on("value", s => {
                     let data = s.val() || {};
-                    // Display Self Name and Pic
                     document.getElementById('myNameDisplay').innerText = data.name || user.displayName;
                     document.getElementById('myPicNav').src = data.pic || user.photoURL;
-                    
-                    if(!s.exists()) {
-                        db.ref("users/" + user.uid).set({ name: user.displayName, pic: user.photoURL, online: true });
-                    }
+                    if(!s.exists()) db.ref("users/" + user.uid).set({ name: user.displayName, pic: user.photoURL, online: true });
                 });
 
                 db.ref("users/" + user.uid).update({ online: true });
@@ -119,26 +118,20 @@
 
         function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
         function logout() { if(me) db.ref("users/"+me.uid).update({online:false}); auth.signOut(); }
-
         function triggerUpload() { document.getElementById('fileInput').click(); }
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const base64Image = e.target.result;
-                    db.ref("users/" + me.uid).update({ pic: base64Image });
-                };
+                reader.onload = e => db.ref("users/" + me.uid).update({ pic: e.target.result });
                 reader.readAsDataURL(file);
             }
         }
 
         function updateName() {
             let newName = prompt("Enter your new name:");
-            if (newName && newName.trim() !== "") {
-                db.ref("users/" + me.uid).update({ name: newName.trim() });
-            }
+            if (newName && newName.trim() !== "") db.ref("users/" + me.uid).update({ name: newName.trim() });
         }
 
         function loadFriends() {
@@ -161,6 +154,7 @@
             let cid = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
             if (document.getElementById(cid)) return;
             selectedMsgs[cid] = [];
+            activeChats[cid] = uid;
 
             let myBlock = (await db.ref(`blocks/${me.uid}/${uid}`).once('value')).val();
             let theirBlock = (await db.ref(`blocks/${uid}/${me.uid}`).once('value')).val();
@@ -176,10 +170,10 @@
                         </div>
                     </div>
                     <div class="chat-header" id="head_${cid}">
-                        <b>${name}</b>
+                        <div><b id="name_${cid}">${name}</b><br><small id="type_${cid}" style="color:var(--fb-purple);display:none">typing...</small></div>
                         <div style="display:flex; align-items:center;">
                             <div class="menu-dots" onclick="toggleDrop('${cid}')">⋮</div>
-                            <span style="cursor:pointer; margin-left:10px;" onclick="document.getElementById('${cid}').remove()">✖</span>
+                            <span style="cursor:pointer; margin-left:10px;" onclick="closeChat('${cid}')">✖</span>
                         </div>
                         <div class="dropdown" id="drop_${cid}">
                             <div onclick="toggleBlock('${uid}','${cid}')" style="color:red">${myBlock ? 'Unblock User' : 'Block User'}</div>
@@ -190,31 +184,80 @@
                     <div class="chat-body" id="body_${cid}"></div>
                     <div class="chat-input" id="input_${cid}">
                         ${(myBlock || theirBlock) ? '<div class="blocked-info">Chat is blocked</div>' : 
-                        `<input type="text" id="inp_${cid}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
+                        `<button onclick="document.getElementById('media_${cid}').click()" style="background:none;border:none;font-size:20px;cursor:pointer;color:gray;">+</button>
+                        <input type="file" id="media_${cid}" class="chatMediaInput" accept="image/*" onchange="sendMedia('${cid}', this)">
+                        <input type="text" id="inp_${cid}" placeholder="Aa" oninput="handleTyping('${cid}')" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
                         <button onclick="sendMsg('${cid}')" style="color:var(--fb-purple); background:none; border:none; font-weight:bold; cursor:pointer;">Send</button>`}
                     </div>
                 </div>`;
             document.getElementById('chatArea').insertAdjacentHTML('beforeend', chatHtml);
 
-            db.ref("msgs/" + cid).on("value", snap => {
+            // Seen logic
+            db.ref(`msgs/${cid}`).on("value", snap => {
                 let msgDiv = document.getElementById("body_" + cid);
                 if(!msgDiv) return;
                 msgDiv.innerHTML = "";
                 snap.forEach(s => {
                     let m = s.val();
                     if (m.deletedForMe === me.uid || m.everyone === true) return;
+                    if (m.s !== me.uid) db.ref(`msgs/${cid}/${s.key}`).update({ seen: true }); // Mark as seen
+                    
                     let div = document.createElement("div");
                     div.className = `msg ${m.s === me.uid ? 'me' : 'them'}`;
-                    div.innerText = m.t;
+                    let content = m.type === 'img' ? `<img src="${m.t}">` : m.t;
+                    div.innerHTML = content;
                     div.id = `m_${cid}_${s.key}`;
                     div.oncontextmenu = (e) => { e.preventDefault(); startSelection(cid, s.key); };
                     div.onclick = () => { if(selectedMsgs[cid].length > 0) toggleSelect(cid, s.key); };
                     msgDiv.appendChild(div);
+
+                    if(m.s === me.uid && m.seen) {
+                        let seen = document.createElement("div");
+                        seen.className = "seen-status"; seen.innerText = "Seen";
+                        msgDiv.appendChild(seen);
+                    }
                 });
                 msgDiv.scrollTop = msgDiv.scrollHeight;
             });
+
+            // Typing listener
+            db.ref(`typing/${cid}/${uid}`).on("value", s => {
+                document.getElementById(`type_${cid}`).style.display = s.val() ? "block" : "none";
+            });
         }
 
+        function handleTyping(cid) {
+            db.ref(`typing/${cid}/${me.uid}`).set(true);
+            clearTimeout(window['t_'+cid]);
+            window['t_'+cid] = setTimeout(() => db.ref(`typing/${cid}/${me.uid}`).set(false), 2000);
+        }
+
+        function sendMedia(cid, el) {
+            const file = el.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    db.ref("msgs/" + cid).push({ s: me.uid, t: e.target.result, type: 'img', seen: false, everyone: false });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function sendMsg(cid) {
+            let inp = document.getElementById("inp_" + cid);
+            if (!inp.value.trim()) return;
+            db.ref("msgs/" + cid).push({ s: me.uid, t: inp.value, type: 'text', seen: false, everyone: false });
+            inp.value = "";
+            db.ref(`typing/${cid}/${me.uid}`).set(false);
+        }
+
+        function closeChat(cid) {
+            db.ref(`typing/${cid}/${me.uid}`).set(false);
+            document.getElementById(cid).remove();
+            delete activeChats[cid];
+        }
+
+        // Previous functions kept exactly as they were
         function toggleBlock(uid, cid) {
             let ref = db.ref(`blocks/${me.uid}/${uid}`);
             ref.once('value', s => {
@@ -222,32 +265,23 @@
                 document.getElementById(cid).remove();
             });
         }
-
         function toggleDrop(cid) {
             let d = document.getElementById(`drop_${cid}`);
             d.style.display = d.style.display === "block" ? "none" : "block";
         }
-
         function startSelection(cid, mid) {
             if(!selectedMsgs[cid].includes(mid)) toggleSelect(cid, mid);
             document.getElementById(`bar_${cid}`).style.display = "flex";
             document.getElementById(`head_${cid}`).style.display = "none";
         }
-
         function toggleSelect(cid, mid) {
             let idx = selectedMsgs[cid].indexOf(mid);
             let el = document.getElementById(`m_${cid}_${mid}`);
-            if(idx > -1) {
-                selectedMsgs[cid].splice(idx, 1);
-                el.classList.remove("selected");
-            } else {
-                selectedMsgs[cid].push(mid);
-                el.classList.add("selected");
-            }
+            if(idx > -1) { selectedMsgs[cid].splice(idx, 1); el.classList.remove("selected"); } 
+            else { selectedMsgs[cid].push(mid); el.classList.add("selected"); }
             document.getElementById(`count_${cid}`).innerText = selectedMsgs[cid].length + " Selected";
             if(selectedMsgs[cid].length === 0) cancelSelection(cid);
         }
-
         function cancelSelection(cid) {
             selectedMsgs[cid].forEach(mid => {
                 let el = document.getElementById(`m_${cid}_${mid}`);
@@ -257,7 +291,6 @@
             document.getElementById(`bar_${cid}`).style.display = "none";
             document.getElementById(`head_${cid}`).style.display = "flex";
         }
-
         function deleteSelected(cid, type) {
             if(!confirm(`Delete selected for ${type}?`)) return;
             selectedMsgs[cid].forEach(mid => {
@@ -266,7 +299,6 @@
             });
             cancelSelection(cid);
         }
-
         function clearChat(cid, type) {
             if(!confirm(`Clear chat for ${type}?`)) return;
             db.ref("msgs/" + cid).once("value", snap => {
@@ -276,13 +308,6 @@
                 });
             });
             toggleDrop(cid);
-        }
-
-        function sendMsg(cid) {
-            let inp = document.getElementById("inp_" + cid);
-            if (!inp.value.trim()) return;
-            db.ref("msgs/" + cid).push({ s: me.uid, t: inp.value, time: Date.now(), everyone: false });
-            inp.value = "";
         }
     </script>
 </body>
