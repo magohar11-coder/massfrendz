@@ -12,8 +12,9 @@
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--fb-bg); user-select: none; }
         nav { height: 56px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .logo { color: var(--fb-purple); font-size: 24px; font-weight: bold; }
-        .nav-right { display: flex; align-items: center; gap: 10px; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
         #myPicNav { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 2px solid var(--fb-purple); object-fit: cover; }
+        #myNameDisplay { font-weight: 600; color: #333; font-size: 14px; }
         
         .container { max-width: 600px; margin: 20px auto; padding: 0 10px; }
         .card { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -60,6 +61,7 @@
         <nav>
             <div class="logo">MassFrendz</div>
             <div class="nav-right">
+                <span id="myNameDisplay">Loading...</span>
                 <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)">
                 <img id="myPicNav" title="Click to change Profile" onclick="triggerUpload()">
                 <button onclick="updateName()" style="background:none; border:none; color:var(--fb-purple); font-weight:bold; cursor:pointer;">Edit Name</button>
@@ -97,8 +99,9 @@
                 
                 db.ref("users/" + user.uid).on("value", s => {
                     let data = s.val() || {};
-                    if(data.pic) document.getElementById('myPicNav').src = data.pic;
-                    else document.getElementById('myPicNav').src = user.photoURL;
+                    // Display Self Name and Pic
+                    document.getElementById('myNameDisplay').innerText = data.name || user.displayName;
+                    document.getElementById('myPicNav').src = data.pic || user.photoURL;
                     
                     if(!s.exists()) {
                         db.ref("users/" + user.uid).set({ name: user.displayName, pic: user.photoURL, online: true });
@@ -117,7 +120,6 @@
         function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
         function logout() { if(me) db.ref("users/"+me.uid).update({online:false}); auth.signOut(); }
 
-        // --- NEW: Direct Upload System ---
         function triggerUpload() { document.getElementById('fileInput').click(); }
 
         function handleFileUpload(event) {
@@ -135,8 +137,7 @@
         function updateName() {
             let newName = prompt("Enter your new name:");
             if (newName && newName.trim() !== "") {
-                db.ref("users/" + me.uid).update({ name: newName.trim() })
-                .then(() => alert("Name updated successfully!"));
+                db.ref("users/" + me.uid).update({ name: newName.trim() });
             }
         }
 
@@ -147,7 +148,7 @@
                 snap.forEach(child => {
                     if (child.key === me.uid) return;
                     let u = child.val();
-                    if(u.name.toLowerCase().includes(filter)) {
+                    if(u.name && u.name.toLowerCase().includes(filter)) {
                         fDiv.innerHTML += `<div class="friend" onclick="openChat('${child.key}','${u.name}')">
                             <img src="${u.pic || 'https://via.placeholder.com/50'}"><div class="online-dot" style="background:${u.online ? '#42b72a' : '#ccc'}"></div>
                             <br><small>${u.name.split(' ')[0]}</small></div>`;
