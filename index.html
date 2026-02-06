@@ -30,12 +30,12 @@
         .chat-header { background: #fff; padding: 10px; border-bottom: 1px solid #ddd; border-top: 3px solid var(--fb-purple); display: flex; justify-content: space-between; align-items: center; }
         .chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; background: #fff; position: relative; }
         
-        .msg { max-width: 75%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; cursor: pointer; transition: 0.2s; position: relative; }
+        .msg { max-width: 75%; padding: 8px 12px; border-radius: 18px; font-size: 14px; word-wrap: break-word; cursor: pointer; transition: 0.2s; position: relative; margin-bottom: 2px; }
         .msg.me { align-self: flex-end; background: var(--fb-purple); color: #fff; }
         .msg.them { align-self: flex-start; background: #efeff3; color: #050505; }
         .msg img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
         .msg.selected { opacity: 0.5; transform: scale(0.95); border: 2px solid var(--fb-purple); }
-        .seen-status { font-size: 10px; color: var(--fb-purple); align-self: flex-end; margin-right: 5px; }
+        .seen-status { font-size: 10px; color: var(--fb-purple); align-self: flex-end; margin-right: 5px; margin-bottom: 5px; }
 
         .selection-bar { display: none; background: var(--fb-purple); color: white; padding: 10px; justify-content: space-between; align-items: center; font-size: 14px; }
         .selection-bar button { background: white; color: var(--fb-purple); border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
@@ -154,7 +154,6 @@
             let cid = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
             if (document.getElementById(cid)) return;
             selectedMsgs[cid] = [];
-            activeChats[cid] = uid;
 
             let myBlock = (await db.ref(`blocks/${me.uid}/${uid}`).once('value')).val();
             let theirBlock = (await db.ref(`blocks/${uid}/${me.uid}`).once('value')).val();
@@ -170,7 +169,7 @@
                         </div>
                     </div>
                     <div class="chat-header" id="head_${cid}">
-                        <div><b id="name_${cid}">${name}</b><br><small id="type_${cid}" style="color:var(--fb-purple);display:none">typing...</small></div>
+                        <div><b>${name}</b><br><small id="type_${cid}" style="color:var(--fb-purple);display:none">typing...</small></div>
                         <div style="display:flex; align-items:center;">
                             <div class="menu-dots" onclick="toggleDrop('${cid}')">⋮</div>
                             <span style="cursor:pointer; margin-left:10px;" onclick="closeChat('${cid}')">✖</span>
@@ -192,44 +191,51 @@
                 </div>`;
             document.getElementById('chatArea').insertAdjacentHTML('beforeend', chatHtml);
 
-            // Seen logic
+            // FIX: Realtime message display with Seen Logic
             db.ref(`msgs/${cid}`).on("value", snap => {
                 let msgDiv = document.getElementById("body_" + cid);
                 if(!msgDiv) return;
-                msgDiv.innerHTML = "";
+                msgDiv.innerHTML = ""; // Clear for re-rendering
                 snap.forEach(s => {
                     let m = s.val();
                     if (m.deletedForMe === me.uid || m.everyone === true) return;
-                    if (m.s !== me.uid) db.ref(`msgs/${cid}/${s.key}`).update({ seen: true }); // Mark as seen
+                    
+                    // Update Seen Status
+                    if (m.s !== me.uid && !m.seen) {
+                        db.ref(`msgs/${cid}/${s.key}/seen`).set(true);
+                    }
                     
                     let div = document.createElement("div");
                     div.className = `msg ${m.s === me.uid ? 'me' : 'them'}`;
-                    let content = m.type === 'img' ? `<img src="${m.t}">` : m.t;
-                    div.innerHTML = content;
+                    div.innerHTML = m.type === 'img' ? `<img src="${m.t}">` : m.t;
                     div.id = `m_${cid}_${s.key}`;
                     div.oncontextmenu = (e) => { e.preventDefault(); startSelection(cid, s.key); };
                     div.onclick = () => { if(selectedMsgs[cid].length > 0) toggleSelect(cid, s.key); };
                     msgDiv.appendChild(div);
 
                     if(m.s === me.uid && m.seen) {
-                        let seen = document.createElement("div");
-                        seen.className = "seen-status"; seen.innerText = "Seen";
-                        msgDiv.appendChild(seen);
+                        let seenTag = document.createElement("div");
+                        seenTag.className = "seen-status"; seenTag.innerText = "Seen";
+                        msgDiv.appendChild(seenTag);
                     }
                 });
                 msgDiv.scrollTop = msgDiv.scrollHeight;
             });
 
-            // Typing listener
+            // FIX: Typing status correctly displayed for OTHER user
             db.ref(`typing/${cid}/${uid}`).on("value", s => {
-                document.getElementById(`type_${cid}`).style.display = s.val() ? "block" : "none";
+                let tLabel = document.getElementById(`type_${cid}`);
+                if(tLabel) tLabel.style.display = s.val() ? "block" : "none";
             });
         }
 
+        let typingTimers = {};
         function handleTyping(cid) {
             db.ref(`typing/${cid}/${me.uid}`).set(true);
-            clearTimeout(window['t_'+cid]);
-            window['t_'+cid] = setTimeout(() => db.ref(`typing/${cid}/${me.uid}`).set(false), 2000);
+            if(typingTimers[cid]) clearTimeout(typingTimers[cid]);
+            typingTimers[cid] = setTimeout(() => {
+                db.ref(`typing/${cid}/${me.uid}`).set(false);
+            }, 2000);
         }
 
         function sendMedia(cid, el) {
@@ -237,7 +243,7 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    db.ref("msgs/" + cid).push({ s: me.uid, t: e.target.result, type: 'img', seen: false, everyone: false });
+                    db.ref("msgs/" + cid).push({ s: me.uid, t: e.target.result, type: 'img', seen: false, everyone: false, time: Date.now() });
                 };
                 reader.readAsDataURL(file);
             }
@@ -246,18 +252,18 @@
         function sendMsg(cid) {
             let inp = document.getElementById("inp_" + cid);
             if (!inp.value.trim()) return;
-            db.ref("msgs/" + cid).push({ s: me.uid, t: inp.value, type: 'text', seen: false, everyone: false });
+            db.ref("msgs/" + cid).push({ s: me.uid, t: inp.value, type: 'text', seen: false, everyone: false, time: Date.now() });
             inp.value = "";
             db.ref(`typing/${cid}/${me.uid}`).set(false);
         }
 
         function closeChat(cid) {
             db.ref(`typing/${cid}/${me.uid}`).set(false);
+            db.ref(`msgs/${cid}`).off();
+            db.ref(`typing/${cid}`).off();
             document.getElementById(cid).remove();
-            delete activeChats[cid];
         }
 
-        // Previous functions kept exactly as they were
         function toggleBlock(uid, cid) {
             let ref = db.ref(`blocks/${me.uid}/${uid}`);
             ref.once('value', s => {
