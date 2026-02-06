@@ -92,7 +92,7 @@
         const db = firebase.database();
         let me = null;
         let selectedMsgs = {}; 
-        let activeChats = {};
+        let typingTimers = {};
 
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -191,51 +191,60 @@
                 </div>`;
             document.getElementById('chatArea').insertAdjacentHTML('beforeend', chatHtml);
 
-            // FIX: Realtime message display with Seen Logic
-            db.ref(`msgs/${cid}`).on("value", snap => {
-                let msgDiv = document.getElementById("body_" + cid);
-                if(!msgDiv) return;
-                msgDiv.innerHTML = ""; // Clear for re-rendering
-                snap.forEach(s => {
-                    let m = s.val();
-                    if (m.deletedForMe === me.uid || m.everyone === true) return;
-                    
-                    // Update Seen Status
-                    if (m.s !== me.uid && !m.seen) {
-                        db.ref(`msgs/${cid}/${s.key}/seen`).set(true);
-                    }
-                    
-                    let div = document.createElement("div");
-                    div.className = `msg ${m.s === me.uid ? 'me' : 'them'}`;
-                    div.innerHTML = m.type === 'img' ? `<img src="${m.t}">` : m.t;
-                    div.id = `m_${cid}_${s.key}`;
-                    div.oncontextmenu = (e) => { e.preventDefault(); startSelection(cid, s.key); };
-                    div.onclick = () => { if(selectedMsgs[cid].length > 0) toggleSelect(cid, s.key); };
-                    msgDiv.appendChild(div);
-
-                    if(m.s === me.uid && m.seen) {
-                        let seenTag = document.createElement("div");
-                        seenTag.className = "seen-status"; seenTag.innerText = "Seen";
-                        msgDiv.appendChild(seenTag);
-                    }
-                });
-                msgDiv.scrollTop = msgDiv.scrollHeight;
+            // NO DUPLICATE: Using Child Added and Child Changed for messages
+            const msgRef = db.ref(`msgs/${cid}`);
+            msgRef.on("child_added", s => renderMsg(cid, s));
+            msgRef.on("child_changed", s => {
+                const el = document.getElementById(`m_${cid}_${s.key}`);
+                if(el) { document.getElementById(`body_${cid}`).innerHTML = ""; msgRef.once('value', snap => snap.forEach(child => renderMsg(cid, child))); }
             });
 
-            // FIX: Typing status correctly displayed for OTHER user
+            // Typing listener for THIS specific chat
             db.ref(`typing/${cid}/${uid}`).on("value", s => {
                 let tLabel = document.getElementById(`type_${cid}`);
                 if(tLabel) tLabel.style.display = s.val() ? "block" : "none";
             });
         }
 
-        let typingTimers = {};
+        function renderMsg(cid, s) {
+            let m = s.val();
+            let msgDiv = document.getElementById("body_" + cid);
+            if(!msgDiv || m.deletedForMe === me.uid || m.everyone === true) return;
+
+            // Mark as seen if it's from the other person
+            if (m.s !== me.uid && !m.seen) db.ref(`msgs/${cid}/${s.key}/seen`).set(true);
+
+            let div = document.createElement("div");
+            div.className = `msg ${m.s === me.uid ? 'me' : 'them'}`;
+            div.innerHTML = m.type === 'img' ? `<img src="${m.t}">` : m.t;
+            div.id = `m_${cid}_${s.key}`;
+            div.oncontextmenu = (e) => { e.preventDefault(); startSelection(cid, s.key); };
+            div.onclick = () => { if(selectedMsgs[cid].length > 0) toggleSelect(cid, s.key); };
+            msgDiv.appendChild(div);
+
+            if(m.s === me.uid && m.seen) {
+                let seenTag = document.createElement("div");
+                seenTag.className = "seen-status"; seenTag.innerText = "Seen";
+                seenTag.id = `seen_${s.key}`;
+                msgDiv.appendChild(seenTag);
+            }
+            msgDiv.scrollTop = msgDiv.scrollHeight;
+        }
+
         function handleTyping(cid) {
             db.ref(`typing/${cid}/${me.uid}`).set(true);
             if(typingTimers[cid]) clearTimeout(typingTimers[cid]);
             typingTimers[cid] = setTimeout(() => {
                 db.ref(`typing/${cid}/${me.uid}`).set(false);
-            }, 2000);
+            }, 1500);
+        }
+
+        function sendMsg(cid) {
+            let inp = document.getElementById("inp_" + cid);
+            if (!inp.value.trim()) return;
+            db.ref("msgs/" + cid).push({ s: me.uid, t: inp.value, type: 'text', seen: false, everyone: false });
+            inp.value = "";
+            db.ref(`typing/${cid}/${me.uid}`).set(false);
         }
 
         function sendMedia(cid, el) {
@@ -243,18 +252,10 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    db.ref("msgs/" + cid).push({ s: me.uid, t: e.target.result, type: 'img', seen: false, everyone: false, time: Date.now() });
+                    db.ref("msgs/" + cid).push({ s: me.uid, t: e.target.result, type: 'img', seen: false, everyone: false });
                 };
                 reader.readAsDataURL(file);
             }
-        }
-
-        function sendMsg(cid) {
-            let inp = document.getElementById("inp_" + cid);
-            if (!inp.value.trim()) return;
-            db.ref("msgs/" + cid).push({ s: me.uid, t: inp.value, type: 'text', seen: false, everyone: false, time: Date.now() });
-            inp.value = "";
-            db.ref(`typing/${cid}/${me.uid}`).set(false);
         }
 
         function closeChat(cid) {
