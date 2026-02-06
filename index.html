@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MassFrendz - Pro</title>
+    <title>MassFrendz - Pro Max</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -12,8 +12,15 @@
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--fb-bg); user-select: none; }
         nav { height: 56px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .logo { color: var(--fb-purple); font-size: 24px; font-weight: bold; }
+        .nav-right { display: flex; align-items: center; gap: 10px; }
+        #myPicNav { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 2px solid var(--fb-purple); }
+        
         .container { max-width: 600px; margin: 20px auto; padding: 0 10px; }
         .card { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        
+        /* Search Box */
+        .search-box { width: 100%; padding: 8px; border-radius: 20px; border: 1px solid #ddd; background: #f0f2f5; outline: none; margin-bottom: 10px; box-sizing: border-box; }
+        
         .friend-list { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
         .friend { text-align: center; min-width: 70px; cursor: pointer; position: relative; }
         .friend img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--fb-purple); }
@@ -39,6 +46,7 @@
         .dropdown { position: absolute; right: 10px; top: 45px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); border-radius: 5px; display: none; z-index: 10; }
         .dropdown div { padding: 10px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #eee; }
         .dropdown div:hover { background: #f5f5f5; }
+        .blocked-info { color: red; font-size: 12px; text-align: center; padding: 5px; width: 100%; }
     </style>
 </head>
 <body>
@@ -49,9 +57,18 @@
     </div>
 
     <div id="app" style="display:none">
-        <nav><div class="logo">MassFrendz</div><button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Logout</button></nav>
+        <nav>
+            <div class="logo">MassFrendz</div>
+            <div class="nav-right">
+                <img id="myPicNav" title="Update Profile" onclick="updateProfile()">
+                <button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Logout</button>
+            </div>
+        </nav>
         <div class="container">
-            <div class="card"><div id="friends" class="friend-list"></div></div>
+            <div class="card">
+                <input type="text" class="search-box" id="searchFriend" placeholder="Search friends..." oninput="loadFriends()">
+                <div id="friends" class="friend-list"></div>
+            </div>
             <div id="posts"></div>
         </div>
     </div>
@@ -69,14 +86,22 @@
         const auth = firebase.auth();
         const db = firebase.database();
         let me = null;
-        let selectedMsgs = {}; // Track selected messages per chat
+        let selectedMsgs = {}; 
 
         auth.onAuthStateChanged(user => {
             if (user && user.email) {
                 me = user;
                 document.getElementById('login').style.display = "none";
                 document.getElementById('app').style.display = "block";
-                db.ref("users/" + user.uid).update({ name: user.displayName, pic: user.photoURL, online: true });
+                
+                // Sync profile and Nav Pic
+                db.ref("users/" + user.uid).on("value", s => {
+                    let data = s.val() || {};
+                    document.getElementById('myPicNav').src = data.pic || user.photoURL;
+                    if(!s.exists()) db.ref("users/" + user.uid).set({ name: user.displayName, pic: user.photoURL, online: true });
+                });
+
+                db.ref("users/" + user.uid).update({ online: true });
                 db.ref("users/" + user.uid).onDisconnect().update({ online: false });
                 loadFriends();
             } else {
@@ -88,15 +113,26 @@
         function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
         function logout() { if(me) db.ref("users/"+me.uid).update({online:false}); auth.signOut(); }
 
+        // --- NEW: Profile Update ---
+        function updateProfile() {
+            let newName = prompt("Enter new name:", me.displayName);
+            let newPic = prompt("Enter Profile Image URL:");
+            if(newName) db.ref("users/"+me.uid).update({ name: newName });
+            if(newPic) db.ref("users/"+me.uid).update({ pic: newPic });
+        }
+
         function loadFriends() {
-            db.ref("users").on("value", snap => {
+            let filter = document.getElementById('searchFriend').value.toLowerCase();
+            db.ref("users").once("value", snap => {
                 const fDiv = document.getElementById('friends'); fDiv.innerHTML = "";
                 snap.forEach(child => {
                     if (child.key === me.uid) return;
                     let u = child.val();
-                    fDiv.innerHTML += `<div class="friend" onclick="openChat('${child.key}','${u.name}')">
-                        <img src="${u.pic}"><div class="online-dot" style="background:${u.online ? '#42b72a' : '#ccc'}"></div>
-                        <br><small>${u.name.split(' ')[0]}</small></div>`;
+                    if(u.name.toLowerCase().includes(filter)) {
+                        fDiv.innerHTML += `<div class="friend" onclick="openChat('${child.key}','${u.name}')">
+                            <img src="${u.pic}"><div class="online-dot" style="background:${u.online ? '#42b72a' : '#ccc'}"></div>
+                            <br><small>${u.name.split(' ')[0]}</small></div>`;
+                    }
                 });
             });
         }
@@ -105,6 +141,10 @@
             let cid = me.uid < uid ? me.uid + "_" + uid : uid + "_" + me.uid;
             if (document.getElementById(cid)) return;
             selectedMsgs[cid] = [];
+
+            // Check Block Status
+            let myBlock = (await db.ref(`blocks/${me.uid}/${uid}`).once('value')).val();
+            let theirBlock = (await db.ref(`blocks/${uid}/${me.uid}`).once('value')).val();
 
             let chatHtml = `
                 <div class="chat-window" id="${cid}">
@@ -123,14 +163,16 @@
                             <span style="cursor:pointer; margin-left:10px;" onclick="document.getElementById('${cid}').remove()">✖</span>
                         </div>
                         <div class="dropdown" id="drop_${cid}">
+                            <div onclick="toggleBlock('${uid}','${cid}')" style="color:red">${myBlock ? 'Unblock User' : 'Block User'}</div>
                             <div onclick="clearChat('${cid}', 'me')">Clear All (For Me)</div>
                             <div onclick="clearChat('${cid}', 'everyone')">Clear All (For Everyone)</div>
                         </div>
                     </div>
                     <div class="chat-body" id="body_${cid}"></div>
                     <div class="chat-input" id="input_${cid}">
-                        <input type="text" id="inp_${cid}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
-                        <button onclick="sendMsg('${cid}')" style="color:var(--fb-purple); background:none; border:none; font-weight:bold; cursor:pointer;">Send</button>
+                        ${(myBlock || theirBlock) ? '<div class="blocked-info">You cannot send messages</div>' : 
+                        `<input type="text" id="inp_${cid}" placeholder="Aa" onkeypress="if(event.key==='Enter') sendMsg('${cid}')">
+                        <button onclick="sendMsg('${cid}')" style="color:var(--fb-purple); background:none; border:none; font-weight:bold; cursor:pointer;">Send</button>`}
                     </div>
                 </div>`;
             document.getElementById('chatArea').insertAdjacentHTML('beforeend', chatHtml);
@@ -142,19 +184,24 @@
                 snap.forEach(s => {
                     let m = s.val();
                     if (m.deletedForMe === me.uid || m.everyone === true) return;
-                    
                     let div = document.createElement("div");
                     div.className = `msg ${m.s === me.uid ? 'me' : 'them'}`;
                     div.innerText = m.t;
                     div.id = `m_${cid}_${s.key}`;
-                    
-                    // Multi-select logic
                     div.oncontextmenu = (e) => { e.preventDefault(); startSelection(cid, s.key); };
                     div.onclick = () => { if(selectedMsgs[cid].length > 0) toggleSelect(cid, s.key); };
-                    
                     msgDiv.appendChild(div);
                 });
                 msgDiv.scrollTop = msgDiv.scrollHeight;
+            });
+        }
+
+        // --- NEW: Toggle Block ---
+        function toggleBlock(uid, cid) {
+            let ref = db.ref(`blocks/${me.uid}/${uid}`);
+            ref.once('value', s => {
+                if(s.exists()) ref.remove(); else ref.set(true);
+                document.getElementById(cid).remove(); // Refresh chat window
             });
         }
 
@@ -194,7 +241,7 @@
         }
 
         function deleteSelected(cid, type) {
-            if(!confirm(`Delete ${selectedMsgs[cid].length} messages for ${type}?`)) return;
+            if(!confirm(`Delete selected for ${type}?`)) return;
             selectedMsgs[cid].forEach(mid => {
                 if(type === 'me') db.ref(`msgs/${cid}/${mid}/deletedForMe`).set(me.uid);
                 else db.ref(`msgs/${cid}/${mid}`).update({ everyone: true });
@@ -203,7 +250,7 @@
         }
 
         function clearChat(cid, type) {
-            if(!confirm(`Clear entire chat for ${type}?`)) return;
+            if(!confirm(`Clear chat for ${type}?`)) return;
             db.ref("msgs/" + cid).once("value", snap => {
                 snap.forEach(s => {
                     if(type === 'me') db.ref(`msgs/${cid}/${s.key}/deletedForMe`).set(me.uid);
